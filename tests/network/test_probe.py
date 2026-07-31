@@ -53,8 +53,8 @@ class TestLatencyProbe:
             return web.json_response({"status": "ok"})
 
         app = web.Application()
-        app.router.add_get("/v1/models", handler)
-        app.router.add_post("/v1/chat/completions", handler)
+        app.router.add_get("/models", handler)
+        app.router.add_post("/chat/completions", handler)
 
         port = unused_port()
         runner = web.AppRunner(app)

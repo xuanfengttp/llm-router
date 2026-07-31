@@ -52,12 +52,15 @@ class LatencyProbe:
         url: str,
         method: str = "GET",
         headers: dict[str, str] | None = None,
+        json_body: dict | None = None,
     ) -> ProbeResult:
         """执行一次 HTTP 请求并测量延迟."""
         start = time.perf_counter()
         try:
             async with aiohttp.ClientSession(timeout=self._timeout) as session:
-                async with session.request(method, url, headers=headers) as resp:
+                async with session.request(
+                    method, url, headers=headers, json=json_body
+                ) as resp:
                     await resp.read()  # 确保完整接收
                     elapsed_ms = (time.perf_counter() - start) * 1000
                     return ProbeResult(
@@ -102,48 +105,14 @@ class LatencyProbe:
         endpoint: str,
         api_key: str | None = None,
     ) -> ProbeResult:
-        """探测 /v1/chat/completions 端点 (POST 空请求)."""
+        """探测 /chat/completions 端点 (POST 空请求体，仅验证可达性)."""
         url = f"{endpoint.rstrip('/')}/chat/completions"
         headers = {"Content-Type": "application/json"}
         if api_key:
             headers["Authorization"] = f"Bearer {api_key}"
-        # 发送最小合法请求体
-        body = {
-            "model": model,
-            "messages": [{"role": "user", "content": "ping"}],
-            "max_tokens": 1,
-        }
-        start = time.perf_counter()
-        try:
-            async with aiohttp.ClientSession(timeout=self._timeout) as session:
-                async with session.post(url, json=body, headers=headers) as resp:
-                    await resp.read()
-                    elapsed_ms = (time.perf_counter() - start) * 1000
-                    # 即使返回 4xx (如无权限) 也算连通——只要服务器响应了
-                    return ProbeResult(
-                        provider=provider,
-                        model=model,
-                        success=resp.status < 500,
-                        latency_ms=round(elapsed_ms, 2),
-                    )
-        except aiohttp.ClientError as e:
-            return ProbeResult(
-                provider=provider,
-                model=model,
-                success=False,
-                error=f"HTTP error: {e}",
-            )
-        except TimeoutError:
-            return ProbeResult(
-                provider=provider, model=model, success=False, error="Connection timeout"
-            )
-        except Exception as e:
-            return ProbeResult(
-                provider=provider,
-                model=model,
-                success=False,
-                error=f"Unexpected: {type(e).__name__}: {e}",
-            )
+        return await self._measure(
+            provider, model, url, method="POST", headers=headers, json_body={}
+        )
 
     async def probe_all(
         self, providers: list[ProviderConfig]
