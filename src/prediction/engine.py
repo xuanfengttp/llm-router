@@ -2,14 +2,12 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-import pandas as pd
-
 from src.config.models import LatencyRecord
 from src.prediction.features import FeatureExtractor
 from src.prediction.model import LatencyPredictor
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class LatencyPrediction:
     """单次延迟预测结果."""
 
