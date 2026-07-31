@@ -126,3 +126,66 @@ class TestConfigManagerStatus:
         await manager.update_status("anthropic", ProviderStatus.OFFLINE)
         statuses = await manager.get_all_statuses()
         assert statuses == {"openai": "online", "anthropic": "offline"}
+
+
+class TestConfigSchema:
+    def test_valid_config_passes_validation(self):
+        from src.config.schema import validate_config
+
+        config = {
+            "providers": [
+                {
+                    "name": "openai",
+                    "endpoint": "https://api.openai.com/v1",
+                    "api_key": "sk-test",
+                    "models": [{"name": "gpt-4o"}],
+                }
+            ]
+        }
+        result = validate_config(config)
+        assert result.errors == []
+        assert result.valid is True
+
+    def test_missing_name_fails_validation(self):
+        from src.config.schema import validate_config
+
+        config = {
+            "providers": [
+                {
+                    "endpoint": "https://api.openai.com/v1",
+                    "models": [{"name": "gpt-4o"}],
+                }
+            ]
+        }
+        result = validate_config(config)
+        assert result.valid is False
+        assert len(result.errors) > 0
+
+    def test_invalid_endpoint_url_fails(self):
+        from src.config.schema import validate_config
+
+        config = {
+            "providers": [
+                {
+                    "name": "openai",
+                    "endpoint": "not-a-url",
+                    "models": [{"name": "gpt-4o"}],
+                }
+            ]
+        }
+        result = validate_config(config)
+        assert result.valid is False
+
+    def test_empty_providers_list(self):
+        from src.config.schema import validate_config
+
+        config = {"providers": []}
+        result = validate_config(config)
+        assert result.valid is True
+
+    def test_missing_providers_key(self):
+        from src.config.schema import validate_config
+
+        config = {}
+        result = validate_config(config)
+        assert result.valid is False
