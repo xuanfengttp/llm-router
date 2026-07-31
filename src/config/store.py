@@ -9,6 +9,7 @@ import yaml
 
 from src.config.crypto import KeyCipher
 from src.config.models import (
+    LatencyRecord,
     ModelConfig,
     ModelDeployment,
     ProviderConfig,
@@ -125,6 +126,18 @@ class ConfigStore:
 
             CREATE INDEX IF NOT EXISTS idx_latency_provider_model
                 ON latency_history(provider, model, timestamp DESC);
+
+            CREATE TABLE IF NOT EXISTS latency_timeseries (
+                provider TEXT NOT NULL,
+                model TEXT NOT NULL,
+                latency_ms REAL NOT NULL DEFAULT 0.0,
+                success INTEGER NOT NULL DEFAULT 1,
+                error TEXT NOT NULL DEFAULT '',
+                timestamp TEXT NOT NULL DEFAULT (datetime('now'))
+            );
+
+            CREATE INDEX IF NOT EXISTS idx_timeseries_provider_model_ts
+                ON latency_timeseries(provider, model, timestamp ASC);
         """)
         await self._conn.commit()
 
@@ -185,3 +198,46 @@ class ConfigStore:
         )
         rows = await cursor.fetchall()
         return [dict(row) for row in rows]
+
+    async def save_latency_records(self, records: list[LatencyRecord]) -> None:
+        """批量写入延迟时序记录."""
+        if not records:
+            return
+        await self._conn.executemany(
+            "INSERT INTO latency_timeseries (provider, model, latency_ms, success, error, timestamp) "
+            "VALUES (?, ?, ?, ?, ?, ?)",
+            [
+                (r.provider, r.model, r.latency_ms, int(r.success), (r.error or ""), r.timestamp)
+                for r in records
+            ],
+        )
+        await self._conn.commit()
+
+    async def load_latency_series(
+        self, provider: str, model: str, limit: int = 100
+    ) -> list[LatencyRecord]:
+        """加载指定模型的延迟时序，按时间升序返回最近 N 条.
+
+        注意：返回的是一个子查询结果 —— 先按 timestamp DESC
+        取最近 limit 条，再按 timestamp ASC 排序以确保时间顺序。
+        """
+        cursor = await self._conn.execute(
+            "SELECT provider, model, latency_ms, success, error, timestamp "
+            "FROM (SELECT * FROM latency_timeseries "
+            "      WHERE provider = ? AND model = ? "
+            "      ORDER BY timestamp DESC LIMIT ?) "
+            "ORDER BY timestamp ASC",
+            (provider, model, limit),
+        )
+        rows = await cursor.fetchall()
+        return [
+            LatencyRecord(
+                provider=row["provider"],
+                model=row["model"],
+                latency_ms=row["latency_ms"],
+                success=bool(row["success"]),
+                error=row["error"] if row["error"] else None,
+                timestamp=row["timestamp"],
+            )
+            for row in rows
+        ]

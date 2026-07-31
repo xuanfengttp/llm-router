@@ -5,6 +5,7 @@ import pytest
 
 from src.config.crypto import KeyCipher, generate_key
 from src.config.models import (
+    LatencyRecord,
     ModelConfig,
     ModelDeployment,
     ProviderConfig,
@@ -165,3 +166,85 @@ class TestConfigStoreSQLite:
         await store.update_provider_status("anthropic", ProviderStatus.OFFLINE)
         statuses = await store.get_all_provider_statuses()
         assert statuses == {"openai": "online", "anthropic": "offline"}
+
+
+class TestConfigStoreTimeseries:
+    """ConfigStore timeseries 表测试."""
+
+    @pytest.fixture
+    async def store_with_db(self, temp_dir):
+        """创建已初始化 DB 的 ConfigStore."""
+        from src.config.store import ConfigStore
+
+        key = generate_key()
+        cipher = KeyCipher(key)
+        store = ConfigStore(
+            config_path=temp_dir / "config.yaml",
+            cipher=cipher,
+            db_path=temp_dir / "test_ts.db",
+        )
+        await store.init_db()
+        yield store
+        await store.close()
+
+    @pytest.mark.asyncio
+    async def test_save_latency_records(self, store_with_db):
+        """批量写入延迟记录."""
+        records = [
+            LatencyRecord(provider="openai", model="gpt-4o", latency_ms=320.0),
+            LatencyRecord(provider="openai", model="gpt-4o-mini", latency_ms=150.0),
+            LatencyRecord(provider="anthropic", model="claude-opus-5", latency_ms=850.0),
+        ]
+        await store_with_db.save_latency_records(records)
+
+    @pytest.mark.asyncio
+    async def test_load_latency_series_default_100(self, store_with_db):
+        """加载延迟时序，默认返回最近 100 条."""
+        records = [
+            LatencyRecord(
+                provider="openai", model="gpt-4o", latency_ms=float(i),
+                timestamp=f"2026-07-31T12:{i // 60:02d}:{i % 60:02d}Z",
+            )
+            for i in range(150)
+        ]
+        await store_with_db.save_latency_records(records)
+        result = await store_with_db.load_latency_series("openai", "gpt-4o")
+        assert len(result) == 100
+        # 子查询 DESC LIMIT 100 → 最近 100 条 (i=50..149)，外层 ASC → 升序
+        assert result[0].latency_ms == 50.0
+        assert result[-1].latency_ms == 149.0
+
+    @pytest.mark.asyncio
+    async def test_load_latency_series_custom_limit(self, store_with_db):
+        """自定义返回数量."""
+        records = [
+            LatencyRecord(
+                provider="openai", model="gpt-4o", latency_ms=float(i),
+                timestamp=f"2026-07-31T12:{i // 60:02d}:{i % 60:02d}Z",
+            )
+            for i in range(50)
+        ]
+        await store_with_db.save_latency_records(records)
+        result = await store_with_db.load_latency_series("openai", "gpt-4o", limit=10)
+        assert len(result) == 10
+        # DESC LIMIT 10 → 最近 10 条 (i=40..49)，外层 ASC → 升序
+        assert result[0].latency_ms == 40.0
+        assert result[-1].latency_ms == 49.0
+
+    @pytest.mark.asyncio
+    async def test_load_latency_series_empty(self, store_with_db):
+        """未找到记录时返回空列表."""
+        result = await store_with_db.load_latency_series("unknown", "unknown")
+        assert len(result) == 0
+
+    @pytest.mark.asyncio
+    async def test_save_latency_records_empty_list(self, store_with_db):
+        """空列表写入不报错."""
+        await store_with_db.save_latency_records([])
+
+    @pytest.mark.asyncio
+    async def test_latency_history_unchanged(self, store_with_db):
+        """验证原有 latency_history 表不受影响."""
+        await store_with_db.record_latency("openai", "gpt-4o", 300.0)
+        history = await store_with_db.get_latency_history("openai", "gpt-4o")
+        assert len(history) == 1
