@@ -43,6 +43,17 @@ class TestProbeResult:
         assert d["latency_ms"] == 320.5
         assert "timestamp" in d
 
+    def test_timestamp_is_utc_iso_format(self):
+        """ProbeResult 时间戳为 UTC ISO 8601 格式."""
+        result = ProbeResult(provider="t", model="m", success=True, latency_ms=10.0)
+        ts = result.timestamp
+        # 必须以 Z 结尾或以 +00:00 结尾
+        assert ts.endswith("Z") or ts.endswith("+00:00")
+        from datetime import datetime
+
+        dt = datetime.fromisoformat(ts.replace("Z", "+00:00"))
+        assert dt.tzinfo is not None
+
 
 class TestLatencyProbe:
     @pytest.fixture

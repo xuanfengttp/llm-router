@@ -116,3 +116,72 @@ class TestModelDeployment:
         assert ModelDeployment.CLOUD == "cloud"
         assert ModelDeployment.LOCAL == "local"
         assert ModelDeployment.HYBRID == "hybrid"
+
+
+from datetime import datetime, timezone
+
+from src.config.models import LatencyRecord
+
+
+class TestLatencyRecord:
+    """LatencyRecord 数据模型测试."""
+
+    def test_create_record_with_required_fields(self):
+        """仅必填字段创建记录."""
+        record = LatencyRecord(
+            provider="openai",
+            model="gpt-4o",
+            latency_ms=320.5,
+        )
+        assert record.provider == "openai"
+        assert record.model == "gpt-4o"
+        assert record.latency_ms == 320.5
+        assert record.success is True
+        assert record.error is None
+
+    def test_create_record_with_all_fields(self):
+        """全字段创建记录."""
+        ts = "2026-07-31T12:00:00Z"
+        record = LatencyRecord(
+            provider="anthropic",
+            model="claude-opus-5",
+            latency_ms=850.0,
+            success=False,
+            error="Connection timeout",
+            timestamp=ts,
+        )
+        assert record.provider == "anthropic"
+        assert record.model == "claude-opus-5"
+        assert record.latency_ms == 850.0
+        assert record.success is False
+        assert record.error == "Connection timeout"
+        assert record.timestamp == ts
+
+    def test_record_default_timestamp_is_utc_now(self):
+        """默认时间戳为当前 UTC 时间."""
+        before = datetime.now(timezone.utc)
+        record = LatencyRecord(provider="p", model="m", latency_ms=100.0)
+        after = datetime.now(timezone.utc)
+        ts = datetime.fromisoformat(record.timestamp)
+        # 字符串时间戳仅精确到秒，比较时去掉微秒
+        before_sec = before.replace(microsecond=0)
+        after_sec = after.replace(microsecond=0)
+        assert before_sec <= ts <= after_sec
+
+    def test_record_is_immutable(self):
+        """LatencyRecord 为不可变对象."""
+        record = LatencyRecord(provider="p", model="m", latency_ms=100.0)
+        with pytest.raises(Exception):
+            record.latency_ms = 200.0  # type: ignore[misc]
+
+    def test_record_equality_by_value(self):
+        """同值记录相等."""
+        r1 = LatencyRecord(provider="a", model="x", latency_ms=100.0, timestamp="2026-01-01T00:00:00Z")
+        r2 = LatencyRecord(provider="a", model="x", latency_ms=100.0, timestamp="2026-01-01T00:00:00Z")
+        assert r1 == r2
+
+    def test_record_hashable(self):
+        """记录可哈希."""
+        r1 = LatencyRecord(provider="a", model="x", latency_ms=100.0, timestamp="2026-01-01T00:00:00Z")
+        r2 = LatencyRecord(provider="a", model="x", latency_ms=100.0, timestamp="2026-01-01T00:00:00Z")
+        assert hash(r1) == hash(r2)

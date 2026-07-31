@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from datetime import datetime, timezone
 from enum import StrEnum
 
 
@@ -89,3 +90,28 @@ class ProviderConfig:
             models=self.models,
             status=status,
         )
+
+
+@dataclass(frozen=True, slots=True)
+class LatencyRecord:
+    """单次延迟探测的持久化记录.
+
+    Attributes:
+        provider: Provider 名称
+        model: 模型名称
+        latency_ms: 延迟毫秒数
+        success: 探测是否成功
+        error: 错误信息（成功时为 None）
+        timestamp: UTC ISO 8601 时间戳
+    """
+
+    provider: str
+    model: str
+    latency_ms: float
+    success: bool = True
+    error: str | None = None
+    timestamp: str = field(
+        default_factory=lambda: datetime.now(timezone.utc).strftime(
+            "%Y-%m-%dT%H:%M:%SZ"
+        )
+    )

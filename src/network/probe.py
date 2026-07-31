@@ -19,7 +19,9 @@ class ProbeResult:
     latency_ms: float | None = None
     error: str | None = None
     timestamp: str = field(
-        default_factory=lambda: time.strftime("%Y-%m-%dT%H:%M:%S")
+        default_factory=lambda: time.strftime(
+            "%Y-%m-%dT%H:%M:%SZ", time.gmtime()
+        )
     )
 
     def to_dict(self) -> dict:
