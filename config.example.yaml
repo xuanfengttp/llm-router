@@ -1,0 +1,14 @@
+# LLM Router 配置文件示例
+# 复制为 config.yaml 并填入实际配置
+
+providers:
+  - name: openai
+    endpoint: https://api.openai.com/v1
+    api_key: "sk-your-key-here"
+    models:
+      - name: gpt-4o
+        deployment: cloud
+        context_window: 128000
+      - name: gpt-4o-mini
+        deployment: cloud
+        context_window: 128000

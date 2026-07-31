@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools>=75.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "llm-router"
+version = "0.1.0"
+description = "智能 Agent 任务调度与 LLM 路由控制系统"
+requires-python = ">=3.12"
+dependencies = [
+    "pyyaml>=6.0",
+    "aiosqlite>=0.20",
+    "aiohttp>=3.9",
+    "cryptography>=43.0",
+    "jsonschema>=4.23",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-asyncio>=0.24",
+    "pytest-cov>=5.0",
+]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
