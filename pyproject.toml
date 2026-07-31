@@ -21,6 +21,11 @@ dev = [
     "pytest-asyncio>=0.24",
     "pytest-cov>=5.0",
 ]
+predict = [
+    "neuralforecast>=1.7",
+    "pandas>=2.0",
+    "numpy>=1.21",
+]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"

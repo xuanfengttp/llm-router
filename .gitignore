@@ -150,6 +150,9 @@ cython_debug/
 .DS_Store
 Thumbs.db
 
+# ML training logs
+lightning_logs/
+
 # Project-specific
 config.yaml
 router_state.db
