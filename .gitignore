@@ -151,5 +151,8 @@ cython_debug/
 Thumbs.db
 
 # Project-specific
+config.yaml
+router_state.db
+*.key
 *.db
 *.local.yaml

@@ -75,7 +75,7 @@ class ValidationResult:
 def _is_uri(instance: object) -> bool:
     """Check if instance is a valid URI."""
     if not isinstance(instance, str):
-        return True
+        return False
     try:
         result = urlparse(instance)
         return all([result.scheme, result.netloc])
