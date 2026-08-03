@@ -84,7 +84,7 @@ def render() -> None:
 
     # 自动模式开关
     with ui.row():
-        ui.switch("自动模式").bind_value(None, "value")
+        ui.switch("自动模式")
 
     # 三列队列
     with ui.row().classes("w-full"):

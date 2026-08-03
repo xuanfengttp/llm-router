@@ -94,7 +94,7 @@ def render() -> None:
     with ui.card():
         ui.label("延迟预测").classes("text-h6")
         with ui.row():
-            ui.label("P50: --").bind_text_from(None, "text")  # placeholder
+            ui.label("P50: --")
             ui.label("P90: --")
             ui.label("可预测性: --")
 
