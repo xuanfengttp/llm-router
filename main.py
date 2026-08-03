@@ -9,7 +9,6 @@
 
 from __future__ import annotations
 
-import asyncio
 import sys
 import webbrowser
 import threading
@@ -28,11 +27,11 @@ def main() -> None:
 
     args = parse_args(sys.argv[1:])
 
-    # 打包环境自动打开浏览器（没有原生窗口可依赖）
+    # 打包环境自动打开浏览器
     if getattr(sys, "frozen", False) and not args.no_native:
         threading.Thread(target=_open_browser, args=(args.port,), daemon=True).start()
 
-    asyncio.run(run(sys.argv[1:]))
+    run(argv=sys.argv[1:])
 
 
 if __name__ == "__main__":

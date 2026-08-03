@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import asyncio
 import os
 import sys
 import threading
@@ -47,23 +48,12 @@ def _is_packaged() -> bool:
     return getattr(sys, "frozen", False)
 
 
-async def run(argv: list[str] | None = None) -> None:
-    """启动 LLM Router 完整应用.
-
-    1. 解析参数
-    2. 构建后端服务
-    3. 注入到 GUI 页面
-    4. 启动 NiceGUI
-    5. 启动系统托盘（独立线程）
-    """
-    args = parse_args(argv)
-
+async def _init_services(args: argparse.Namespace) -> None:
+    """初始化所有后端服务并注入到 GUI 页面（async 阶段）."""
     data_dir = args.db_dir or _get_data_dir()
 
-    # 构建 ConfigManager
     config_manager = await _build_config_manager(data_dir)
 
-    # 注入到各页面
     from src.gui.pages import config_page
 
     config_page.set_config_manager(config_manager)
@@ -88,42 +78,71 @@ async def run(argv: list[str] | None = None) -> None:
 
     settings_page.set_services(route_engine=None, dispatcher=None)
 
-    # 自动模式状态
+
+def _start_tray(args: argparse.Namespace) -> Any:
+    """启动系统托盘（独立线程），返回 tray_icon 或 None."""
+    if args.no_tray:
+        return None
+
+    from src.gui.tray import create_tray, run_tray
+
     auto_mode = True
-    active_tasks = 0
 
-    # 启动托盘（独立线程）
-    tray_icon = None
-    if not args.no_tray:
-        from src.gui.tray import create_tray, run_tray
+    def show_window() -> None:
+        pass
 
-        def show_window() -> None:
-            pass  # NiceGUI 窗口自动显示
+    def toggle_auto() -> None:
+        nonlocal auto_mode
+        auto_mode = not auto_mode
 
-        def toggle_auto() -> None:
-            nonlocal auto_mode
-            auto_mode = not auto_mode
+    def quit_app() -> None:
+        os._exit(0)
 
-        def quit_app() -> None:
-            nonlocal auto_mode
-            auto_mode = False
-            os._exit(0)
+    tray_icon = create_tray(
+        auto_mode=auto_mode,
+        active_tasks=0,
+        show_callback=show_window,
+        toggle_auto_callback=toggle_auto,
+        quit_callback=quit_app,
+    )
+    if tray_icon:
+        tray_thread = threading.Thread(target=run_tray, args=(tray_icon,), daemon=True)
+        tray_thread.start()
+    return tray_icon
 
-        tray_icon = create_tray(
-            auto_mode=auto_mode,
-            active_tasks=active_tasks,
-            show_callback=show_window,
-            toggle_auto_callback=toggle_auto,
-            quit_callback=quit_app,
-        )
-        if tray_icon:
-            tray_thread = threading.Thread(target=run_tray, args=(tray_icon,), daemon=True)
-            tray_thread.start()
 
-    # 启动 NiceGUI
-    from src.gui.app import run_app
+def run(argv: list[str] | None = None) -> None:
+    """启动 LLM Router 完整应用（同步入口）.
 
-    # 打包环境强制使用浏览器模式（pywebview 在 PyInstaller 中不稳定）
+    1. 解析参数
+    2. 初始化后端服务（async）
+    3. 注册页面路由
+    4. 启动系统托盘
+    5. 启动 NiceGUI（ui.run 自己管理事件循环）
+    """
+    args = parse_args(argv)
+
+    # 阶段 1: 异步初始化（用 asyncio.run 跑完即释放事件循环）
+    asyncio.run(_init_services(args))
+
+    # 阶段 2: 注册页面路由
+    from src.gui.app import create_app
+
+    create_app()
+
+    # 阶段 3: 启动托盘
+    _start_tray(args)
+
+    # 阶段 4: 启动 NiceGUI（同步调用，内部自己管理 asyncio）
+    from nicegui import ui
+
     use_native = not args.no_native and not _is_packaged()
 
-    run_app(port=args.port, native=use_native)
+    ui.run(
+        title="LLM Router",
+        favicon="🔄",
+        port=args.port,
+        native=use_native,
+        reload=False,
+        show=True,
+    )
