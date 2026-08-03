@@ -128,7 +128,11 @@ class CostFirstStrategy:
 
 
 class QualityFirstStrategy:
-    """质量优先 (w_cap=0.7, w_lat=0.2, w_cost=0.1)."""
+    """质量优先 (w_cap=0.7, w_lat=0.2, w_cost=0.1).
+
+    注：w_cost=0.1 是有意偏离计划（计划为 0.2）——质量优先策略应
+    弱化成本考量，让能力强但昂贵的模型也能胜出。
+    """
 
     strategy_id = "quality_first"
     display_name = "质量优先"
