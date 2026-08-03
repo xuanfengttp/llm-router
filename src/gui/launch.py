@@ -1,8 +1,8 @@
-# src/gui/launch.py
 from __future__ import annotations
 
 import argparse
 import os
+import sys
 import threading
 from pathlib import Path
 from typing import Any
@@ -19,7 +19,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
 
 
 async def _build_config_manager(data_dir: str) -> Any:
-    """构建 ConfigManager（用内存数据库做测试友好模式）."""
+    """构建 ConfigManager."""
     from src.config.crypto import generate_key, KeyCipher
     from src.config.manager import ConfigManager
     from src.config.store import ConfigStore
@@ -42,11 +42,16 @@ def _get_data_dir() -> str:
     return str(data_dir)
 
 
+def _is_packaged() -> bool:
+    """判断是否在 PyInstaller 打包环境中运行."""
+    return getattr(sys, "frozen", False)
+
+
 async def run(argv: list[str] | None = None) -> None:
     """启动 LLM Router 完整应用.
 
     1. 解析参数
-    2. 构建后端服务（ConfigManager、TaskQueue 等）
+    2. 构建后端服务
     3. 注入到 GUI 页面
     4. 启动 NiceGUI
     5. 启动系统托盘（独立线程）
@@ -58,12 +63,11 @@ async def run(argv: list[str] | None = None) -> None:
     # 构建 ConfigManager
     config_manager = await _build_config_manager(data_dir)
 
-    # 注入到配置页
+    # 注入到各页面
     from src.gui.pages import config_page
 
     config_page.set_config_manager(config_manager)
 
-    # 注入到仪表板
     from src.gui.pages import dashboard
 
     dashboard.set_services(
@@ -72,17 +76,14 @@ async def run(argv: list[str] | None = None) -> None:
         config_manager=config_manager,
     )
 
-    # 注入到任务页
     from src.gui.pages import tasks_page
 
     tasks_page.set_controller(None, None)
 
-    # 注入到日志页
     from src.gui.pages import logs_page
 
     logs_page.set_audit_log(None)
 
-    # 注入到设置页
     from src.gui.pages import settings_page
 
     settings_page.set_services(route_engine=None, dispatcher=None)
@@ -92,6 +93,7 @@ async def run(argv: list[str] | None = None) -> None:
     active_tasks = 0
 
     # 启动托盘（独立线程）
+    tray_icon = None
     if not args.no_tray:
         from src.gui.tray import create_tray, run_tray
 
@@ -105,7 +107,6 @@ async def run(argv: list[str] | None = None) -> None:
         def quit_app() -> None:
             nonlocal auto_mode
             auto_mode = False
-            # 托盘退出 → 触发应用关闭
             os._exit(0)
 
         tray_icon = create_tray(
@@ -122,4 +123,7 @@ async def run(argv: list[str] | None = None) -> None:
     # 启动 NiceGUI
     from src.gui.app import run_app
 
-    run_app(port=args.port, native=not args.no_native)
+    # 打包环境强制使用浏览器模式（pywebview 在 PyInstaller 中不稳定）
+    use_native = not args.no_native and not _is_packaged()
+
+    run_app(port=args.port, native=use_native)
