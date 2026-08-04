@@ -10,6 +10,20 @@ interface LatencyChartProps {
 
 type ChartMode = 'line' | 'candlestick';
 
+/** ECharts candlestick data point: [timestamp, open, close, low, high] */
+type OhlcEntry = [string, number, number, number, number];
+
+interface EChartsSeriesItem {
+  name: string;
+  type: string;
+  data: (string | number)[][] | OhlcEntry[];
+  smooth?: boolean;
+  symbol?: string;
+  symbolSize?: number;
+  lineStyle?: Record<string, unknown>;
+  itemStyle?: Record<string, unknown>;
+}
+
 export function LatencyChart({ records }: LatencyChartProps) {
   const chartRef = useRef<HTMLDivElement>(null);
   const echartsRef = useRef<echarts.ECharts | null>(null);
@@ -35,7 +49,7 @@ export function LatencyChart({ records }: LatencyChartProps) {
       byModel.set(r.model, arr);
     }
 
-    const series: any[] = [];
+    const series: EChartsSeriesItem[] = [];
     const colors = ['#4ec9b0', '#569cd6', '#ce9178', '#dcdcaa', '#c586c0', '#9cdcfe'];
     let colorIdx = 0;
 
@@ -44,7 +58,7 @@ export function LatencyChart({ records }: LatencyChartProps) {
       colorIdx++;
 
       if (mode === 'line') {
-        const data = recs.map(r => [r.timestamp, r.latency_ms]);
+        const data = recs.map(r => [r.timestamp, r.latency_ms] as [string, number]);
         series.push({
           name: model,
           type: 'line',
@@ -57,7 +71,11 @@ export function LatencyChart({ records }: LatencyChartProps) {
         });
       } else {
         // Candlestick: group by minute, get OHLC
-        const ohlc: [string, number, number, number, number][] = [];
+        // open  = first value in chronological order during this minute
+        // close = last value in chronological order
+        // high  = maximum of the minute's values
+        // low   = minimum of the minute's values
+        const ohlc: OhlcEntry[] = [];
         const minuteMap = new Map<string, number[]>();
         for (const r of recs) {
           const minute = r.timestamp.slice(0, 16);
@@ -66,8 +84,11 @@ export function LatencyChart({ records }: LatencyChartProps) {
           minuteMap.set(minute, arr);
         }
         for (const [minute, vals] of minuteMap) {
-          const sorted = [...vals].sort((a, b) => a - b);
-          ohlc.push([minute, sorted[0], sorted[sorted.length - 1], sorted[0], sorted[sorted.length - 1]]);
+          const openVal = vals[0];
+          const closeVal = vals[vals.length - 1];
+          const highVal = Math.max(...vals);
+          const lowVal = Math.min(...vals);
+          ohlc.push([minute, openVal, closeVal, lowVal, highVal]);
         }
         series.push({
           name: model,
