@@ -52,7 +52,7 @@ class LatencyRecordOut(BaseModel):
     model: str
     latency_ms: float
     timestamp: str
-    success: bool
+    success: bool = True
 
 
 class DashboardStatusOut(BaseModel):
