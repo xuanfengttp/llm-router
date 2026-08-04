@@ -78,3 +78,13 @@ class SettingsOut(BaseModel):
     theme: str = "dark"
     language: str = "zh"
     data_dir: str = ""
+
+
+class AgentTaskCreate(BaseModel):
+    prompt: str
+    target_model: str | None = None
+
+
+class AgentTaskOut(BaseModel):
+    task_id: str
+    status: str
