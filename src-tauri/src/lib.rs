@@ -5,7 +5,7 @@ use tauri::Manager;
 pub struct PythonBackend(pub Mutex<Option<Child>>);
 
 fn start_backend() -> Option<Child> {
-    Command::new("python")
+    match Command::new("python")
         .args([
             "-m",
             "uvicorn",
@@ -16,17 +16,40 @@ fn start_backend() -> Option<Child> {
             "19876",
         ])
         .spawn()
-        .ok()
+    {
+        Ok(child) => {
+            eprintln!("[Tauri] Python backend started (PID: {})", child.id());
+            Some(child)
+        }
+        Err(err) => {
+            eprintln!(
+                "[Tauri] FATAL: Failed to start Python backend: {}\n\
+                 Make sure Python is installed and 'pip install uvicorn fastapi' has been run.\n\
+                 Working directory: {:?}",
+                err,
+                std::env::current_dir().unwrap_or_default(),
+            );
+            None
+        }
+    }
 }
 
 fn kill_backend(child: &mut Child) {
+    eprintln!("[Tauri] Stopping Python backend (PID: {})...", child.id());
     let _ = child.kill();
     let _ = child.wait();
+    eprintln!("[Tauri] Python backend stopped.");
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    let child = start_backend().expect("Failed to start Python backend");
+    let child = match start_backend() {
+        Some(child) => child,
+        None => {
+            eprintln!("[Tauri] Cannot start without Python backend. Exiting.");
+            std::process::exit(1);
+        }
+    };
 
     tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
@@ -44,5 +67,5 @@ pub fn run() {
             }
         })
         .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+        .expect("Tauri runtime error");
 }

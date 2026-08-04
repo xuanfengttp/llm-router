@@ -100,7 +100,7 @@ export default function DashboardPage() {
     }
   }, [appendLatency]);
 
-  const wsUrl = `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}/ws/dashboard`;
+  const wsUrl = `ws://localhost:19876/api/ws/dashboard`;
   const { send } = useWebSocket<WsProbeMessage>(wsUrl, handleWsMessage);
 
   // Subscribe to selected models via WebSocket (only when selectedModels change)
