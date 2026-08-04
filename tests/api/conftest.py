@@ -52,3 +52,29 @@ def client(mock_config_manager):
     app.include_router(router, prefix="/api")
     app.state.config_manager = mock_config_manager
     return TestClient(app)
+
+
+@pytest.fixture
+def mock_network_probe():
+    from collections import namedtuple
+    ProbeResult = namedtuple('ProbeResult', ['success', 'latency_ms', 'error'])
+
+    class MockProbe:
+        async def ping_chat_endpoint(self, provider, model, endpoint, api_key=None):
+            if provider == 'nonexist':
+                return ProbeResult(False, None, 'Unknown provider')
+            return ProbeResult(True, 234.5, None)
+
+    return MockProbe()
+
+
+@pytest.fixture
+def dashboard_client(mock_config_manager, mock_network_probe):
+    from backend.src.api.dashboard_api import router
+    from fastapi import FastAPI
+    app = FastAPI()
+    app.include_router(router, prefix="/api")
+    app.state.config_manager = mock_config_manager
+    app.state.network_probe = mock_network_probe
+    from fastapi.testclient import TestClient
+    return TestClient(app)
