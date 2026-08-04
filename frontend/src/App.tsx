@@ -3,6 +3,7 @@ import { AppShell } from '@/components/AppShell';
 import { useEffect } from 'react';
 import { useAppStore } from '@/store/appStore';
 import ConfigPage from '@/pages/ConfigPage';
+import DashboardPage from '@/pages/DashboardPage';
 
 function ThemeInit() {
   const theme = useAppStore((s) => s.theme);
@@ -18,7 +19,7 @@ export default function App() {
       <ThemeInit />
       <Routes>
         <Route element={<AppShell />}>
-          <Route index element={<PlaceholderPage title="Dashboard" />} />
+          <Route index element={<DashboardPage />} />
           <Route path="config" element={<ConfigPage />} />
           <Route path="tasks" element={<PlaceholderPage title="Tasks" />} />
           <Route path="logs" element={<PlaceholderPage title="Logs" />} />
