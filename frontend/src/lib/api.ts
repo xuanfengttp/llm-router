@@ -22,7 +22,7 @@ export const api = {
     fetchJSON<ProviderConfigOut>('/api/providers/' + encodeURIComponent(name) + '/api-key', {
       method: 'PUT', body: JSON.stringify({ api_key }),
     }),
-  addModel: (name: string, body: { name: string; deployment?: string; context_window?: number }) =>
+  addModel: (name: string, body: { name: string; deployment?: string; context_window?: number; cost_input_1k?: number; cost_output_1k?: number }) =>
     fetchJSON<ProviderConfigOut>('/api/providers/' + encodeURIComponent(name) + '/models', {
       method: 'POST', body: JSON.stringify(body),
     }),

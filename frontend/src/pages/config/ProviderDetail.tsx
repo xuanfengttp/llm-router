@@ -30,8 +30,8 @@ export function ProviderDetail({ provider, onUpdate }: ProviderDetailProps) {
       setApiKeyValue('');
       setShowKey(false);
       onUpdate();
-    } catch {
-      // error handled by refresh
+    } catch (err: unknown) {
+      if (err instanceof Error) setTestResult(`Save failed: ${err.message}`);
     } finally {
       setSavingKey(false);
     }
@@ -63,7 +63,9 @@ export function ProviderDetail({ provider, onUpdate }: ProviderDetailProps) {
       name: fields.name,
       deployment: fields.deployment,
       context_window: fields.context_window,
-    } as { name: string; deployment?: string; context_window?: number });
+      cost_input_1k: fields.cost_input_1k,
+      cost_output_1k: fields.cost_output_1k,
+    });
     onUpdate();
   }
 

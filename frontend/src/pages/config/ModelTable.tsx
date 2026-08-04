@@ -27,6 +27,7 @@ export function ModelTable({ models, onAdd, onRemove }: ModelTableProps) {
   const [newCostIn, setNewCostIn] = useState('');
   const [newCostOut, setNewCostOut] = useState('');
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   async function handleAdd() {
     if (!newName.trim()) return;
@@ -45,8 +46,9 @@ export function ModelTable({ models, onAdd, onRemove }: ModelTableProps) {
       setNewCostIn('');
       setNewCostOut('');
       setAdding(false);
-    } catch {
-      // parent handles error via store refresh
+    } catch (err: unknown) {
+      if (err instanceof Error) setError(err.message);
+      else setError('Failed to add model');
     } finally {
       setSaving(false);
     }
@@ -64,7 +66,10 @@ export function ModelTable({ models, onAdd, onRemove }: ModelTableProps) {
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-        <span style={{ fontSize: 14, fontWeight: 600 }}>Models ({models.length})</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span style={{ fontSize: 14, fontWeight: 600 }}>Models ({models.length})</span>
+          {error && <span style={{ fontSize: 11, color: 'var(--danger)' }}>{error}</span>}
+        </div>
         {!adding && (
           <Button size="sm" variant="outline" onClick={() => setAdding(true)}>
             <Plus size={12} /> Add Model
