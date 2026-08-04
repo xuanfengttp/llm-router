@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { AppShell } from '@/components/AppShell';
 import { useEffect } from 'react';
 import { useAppStore } from '@/store/appStore';
+import ConfigPage from '@/pages/ConfigPage';
 
 function ThemeInit() {
   const theme = useAppStore((s) => s.theme);
@@ -18,7 +19,7 @@ export default function App() {
       <Routes>
         <Route element={<AppShell />}>
           <Route index element={<PlaceholderPage title="Dashboard" />} />
-          <Route path="config" element={<PlaceholderPage title="Config" />} />
+          <Route path="config" element={<ConfigPage />} />
           <Route path="tasks" element={<PlaceholderPage title="Tasks" />} />
           <Route path="logs" element={<PlaceholderPage title="Logs" />} />
           <Route path="settings" element={<PlaceholderPage title="Settings" />} />
