@@ -14,6 +14,18 @@ _project_root = str(Path(__file__).parent.parent.parent.resolve())
 if _project_root not in sys.path:
     sys.path.insert(0, _project_root)
 
+# 将 backend 根目录加入 sys.path，使 src.api.* 导入解析正常工 作
+# Path(__file__) = backend/src/server.py → .parent.parent = backend/
+_backend_root = str(Path(__file__).parent.parent.resolve())
+if _backend_root not in sys.path:
+    sys.path.insert(0, _backend_root)
+
+
+from src.api.config_api import router as config_router
+from src.api.dashboard_api import router as dashboard_router
+from src.api.tasks_api import router as tasks_router
+from src.api.settings_api import router as settings_router
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -34,11 +46,11 @@ async def lifespan(app: FastAPI):
 app = FastAPI(title="LLM Router API", lifespan=lifespan)
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
 
-# 以下 router 将在 Task 2-4 中创建后取消注释
-# app.include_router(config_router, prefix="/api")
-# app.include_router(dashboard_router, prefix="/api")
-# app.include_router(tasks_router, prefix="/api")
-# app.include_router(settings_router, prefix="/api")
+# API 路由注册
+app.include_router(config_router, prefix="/api")
+app.include_router(dashboard_router, prefix="/api")
+app.include_router(tasks_router, prefix="/api")
+app.include_router(settings_router, prefix="/api")
 
 
 @app.get("/health")
