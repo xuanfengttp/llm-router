@@ -4,6 +4,9 @@ import { useEffect } from 'react';
 import { useAppStore } from '@/store/appStore';
 import ConfigPage from '@/pages/ConfigPage';
 import DashboardPage from '@/pages/DashboardPage';
+import TasksPage from '@/pages/TasksPage';
+import LogsPage from '@/pages/LogsPage';
+import SettingsPage from '@/pages/SettingsPage';
 
 function ThemeInit() {
   const theme = useAppStore((s) => s.theme);
@@ -21,26 +24,11 @@ export default function App() {
         <Route element={<AppShell />}>
           <Route index element={<DashboardPage />} />
           <Route path="config" element={<ConfigPage />} />
-          <Route path="tasks" element={<PlaceholderPage title="Tasks" />} />
-          <Route path="logs" element={<PlaceholderPage title="Logs" />} />
-          <Route path="settings" element={<PlaceholderPage title="Settings" />} />
+          <Route path="tasks" element={<TasksPage />} />
+          <Route path="logs" element={<LogsPage />} />
+          <Route path="settings" element={<SettingsPage />} />
         </Route>
       </Routes>
     </BrowserRouter>
-  );
-}
-
-function PlaceholderPage({ title }: { title: string }) {
-  return (
-    <div style={{
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      height: '100%',
-      color: 'var(--text-secondary)',
-      fontSize: 18,
-    }}>
-      {title} -- coming soon
-    </div>
   );
 }
