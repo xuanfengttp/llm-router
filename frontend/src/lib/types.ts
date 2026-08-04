@@ -45,3 +45,11 @@ export interface SettingsOut {
   language: string;
   data_dir: string;
 }
+
+export interface TaskOut {
+  task_id: string;
+  status: string;
+  prompt?: string;
+  target_model?: string;
+  created_at?: string;
+}

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAppStore } from '@/store/appStore';
 import { api } from '@/lib/api';
 import { Button } from '@/components/ui/button';
@@ -23,8 +23,13 @@ export default function SettingsPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const successTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   useEffect(() => { setForm(settings); }, [settings]);
+
+  useEffect(() => {
+    return () => clearTimeout(successTimerRef.current);
+  }, []);
 
   async function handleSave() {
     setSaving(true);
@@ -34,11 +39,12 @@ export default function SettingsPage() {
       const updated = await api.updateSettings(form);
       updateStoreSettings(updated);
       // Propagate theme change if needed
-      if (updated.theme !== settings.theme) {
+      if (updated.theme !== form.theme) {
         updateTheme(updated.theme as 'dark' | 'light');
       }
       setSuccess(true);
-      setTimeout(() => setSuccess(false), 2000);
+      clearTimeout(successTimerRef.current);
+      successTimerRef.current = setTimeout(() => setSuccess(false), 2000);
     } catch (e: unknown) {
       if (e instanceof Error) setError(e.message);
     } finally { setSaving(false); }
@@ -227,7 +233,10 @@ function NumberField({ label, value, min, max, onChange }: {
     <div>
       <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 4 }}>{label}</div>
       <input type="number" value={value} min={min} max={max}
-        onChange={e => onChange(parseInt(e.target.value, 10) || 0)}
+        onChange={e => {
+          const parsed = parseInt(e.target.value, 10);
+          if (!isNaN(parsed)) onChange(parsed);
+        }}
         style={{ height: 30, padding: '0 8px', borderRadius: 4, border: '1px solid var(--border)',
           background: 'var(--bg-primary)', color: 'var(--text-primary)', fontSize: 12, outline: 'none', width: '100%', boxSizing: 'border-box' }} />
     </div>

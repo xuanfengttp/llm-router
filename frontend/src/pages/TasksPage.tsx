@@ -3,14 +3,7 @@ import { Button } from '@/components/ui/button';
 import { api } from '@/lib/api';
 import { useAppStore } from '@/store/appStore';
 import { Plus, RefreshCw, XCircle, RotateCcw, AlertCircle } from 'lucide-react';
-
-interface TaskRow {
-  task_id: string;
-  status: string;
-  prompt?: string;
-  target_model?: string;
-  created_at?: string;
-}
+import type { TaskOut } from '@/lib/types';
 
 const STATUS_COLORS: Record<string, string> = {
   pending: 'var(--warning)',
@@ -21,7 +14,7 @@ const STATUS_COLORS: Record<string, string> = {
 
 export default function TasksPage() {
   const { providers } = useAppStore();
-  const [tasks, setTasks] = useState<TaskRow[]>([]);
+  const [tasks, setTasks] = useState<TaskOut[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [prompt, setPrompt] = useState('');
@@ -33,7 +26,7 @@ export default function TasksPage() {
     setError(null);
     try {
       const data = await api.listTasks(50, 0);
-      setTasks(data as unknown as TaskRow[]);
+      setTasks(data);
     } catch (e: unknown) {
       if (e instanceof Error) setError(e.message);
     } finally { setLoading(false); }

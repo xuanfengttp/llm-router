@@ -1,4 +1,4 @@
-import type { ProviderConfigOut, ProbeResultOut, LatencyRecordOut, SettingsOut } from '@/lib/types';
+import type { ProviderConfigOut, ProbeResultOut, LatencyRecordOut, SettingsOut, TaskOut } from '@/lib/types';
 
 const BASE = '';
 
@@ -45,13 +45,13 @@ export const api = {
 
   // Tasks
   listTasks: (limit?: number, offset?: number) =>
-    fetchJSON<Record<string, unknown>[]>(`/api/tasks?limit=${limit ?? 50}&offset=${offset ?? 0}`),
+    fetchJSON<TaskOut[]>(`/api/tasks?limit=${limit ?? 50}&offset=${offset ?? 0}`),
   createTask: (body: { prompt: string; target_model?: string }) =>
-    fetchJSON<Record<string, unknown>>('/api/tasks', { method: 'POST', body: JSON.stringify(body) }),
+    fetchJSON<TaskOut>('/api/tasks', { method: 'POST', body: JSON.stringify(body) }),
   cancelTask: (id: string) =>
-    fetchJSON<Record<string, unknown>>('/api/tasks/' + id + '/cancel', { method: 'POST' }),
+    fetchJSON<TaskOut>('/api/tasks/' + id + '/cancel', { method: 'POST' }),
   retryTask: (id: string) =>
-    fetchJSON<Record<string, unknown>>('/api/tasks/' + id + '/retry', { method: 'POST' }),
+    fetchJSON<TaskOut>('/api/tasks/' + id + '/retry', { method: 'POST' }),
 
   // Settings
   getSettings: () => fetchJSON<SettingsOut>('/api/settings'),
