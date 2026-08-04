@@ -5,7 +5,7 @@ import pytest
 
 
 @pytest.fixture
-def settings_client(mock_config_manager):
+def settings_client():
     from backend.src.api.settings_api import router
     from fastapi import FastAPI
     app = FastAPI()

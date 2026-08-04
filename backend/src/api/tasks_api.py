@@ -9,13 +9,13 @@ if _backend_root not in sys.path:
     sys.path.insert(0, _backend_root)
 
 from fastapi import APIRouter, Request, HTTPException
-from src.schemas import AgentTaskCreate, AgentTaskOut
+from src.schemas import AgentTaskCreate
 
 router = APIRouter(tags=["tasks"])
 
 
 @router.get("/tasks")
-async def list_tasks(request: Request, limit: int = 50, offset: int = 0):
+async def list_tasks(request: Request, limit: int = 50, offset: int = 0) -> list:
     if not hasattr(request.app.state, 'task_queue') or not request.app.state.task_queue:
         return []
     return await request.app.state.task_queue.list_all(limit=limit, offset=offset)
