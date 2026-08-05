@@ -9,14 +9,14 @@ from typing import Any
 
 async def build_config_manager(data_dir: str) -> Any:
     """构建 ConfigManager."""
-    from src.config.crypto import generate_key, KeyCipher
+    from src.config.crypto import KeyCipher, load_key
     from src.config.manager import ConfigManager
     from src.config.store import ConfigStore
 
     data_path = Path(data_dir)
     data_path.mkdir(parents=True, exist_ok=True)
     config_path = data_path / "providers.yaml"
-    key = generate_key()
+    key = load_key(data_dir)
     cipher = KeyCipher(key)
     store = ConfigStore(
         config_path=config_path,

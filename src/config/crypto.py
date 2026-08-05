@@ -9,6 +9,23 @@ def generate_key() -> str:
     return Fernet.generate_key().decode("utf-8")
 
 
+def load_key(data_dir: str) -> str:
+    """加载或生成持久化加密密钥.
+
+    优先从 ``data_dir/.encryption_key`` 读取；不存在则生成新密钥并持久化。
+    确保每次运行使用同一密钥，避免解密失败。
+    """
+    from pathlib import Path
+
+    key_path = Path(data_dir) / ".encryption_key"
+    if key_path.exists():
+        return key_path.read_text(encoding="utf-8").strip()
+    key = generate_key()
+    key_path.parent.mkdir(parents=True, exist_ok=True)
+    key_path.write_text(key, encoding="utf-8")
+    return key
+
+
 class KeyCipher:
     """基于 Fernet 的对称加解密，用于 API Key 安全存储.
 

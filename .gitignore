@@ -163,3 +163,4 @@ router_state.db
 
 # Release build artifacts
 release/llm-router/
+.claude/worktrees/

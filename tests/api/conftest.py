@@ -47,7 +47,7 @@ def mock_config_manager(mock_providers, mock_store):
 
 @pytest.fixture
 def client(mock_config_manager):
-    from src.api.config_api import router
+    from backend.src.api.config_api import router
     app = FastAPI()
     app.include_router(router, prefix="/api")
     app.state.config_manager = mock_config_manager
