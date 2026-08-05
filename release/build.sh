@@ -74,6 +74,10 @@ else
     cp -r "$ROOT/backend" "$RELEASE_DIR/backend/"
     cp -r "$ROOT/src" "$RELEASE_DIR/"
     cp "$ROOT/pyproject.toml" "$RELEASE_DIR/"
+    # 清理 __pycache__ 和残留旧文件
+    find "$RELEASE_DIR" -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
+    rm -rf "$RELEASE_DIR/src/gui" 2>/dev/null || true
+    rm -rf "$RELEASE_DIR/src/llm_router.egg-info" 2>/dev/null || true
 fi
 
 # ----------------------------------
