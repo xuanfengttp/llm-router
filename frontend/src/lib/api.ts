@@ -1,6 +1,6 @@
 import type { ProviderConfigOut, ProbeResultOut, LatencyRecordOut, SettingsOut, TaskOut } from '@/lib/types';
 
-const BASE = '';
+const BASE = import.meta.env.DEV ? '' : 'http://localhost:19876';
 
 async function fetchJSON<T>(url: string, options?: RequestInit): Promise<T> {
   const res = await fetch(BASE + url, {
