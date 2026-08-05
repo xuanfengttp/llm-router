@@ -30,12 +30,16 @@ from src.api.settings_api import router as settings_router
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """初始化/清理服务."""
-    from src.gui.launch import _get_data_dir, _build_config_manager, _get_settings_store
+    from backend.src.bootstrap import (
+        get_data_dir,
+        build_config_manager,
+        get_settings_store,
+    )
     from src.network.probe import LatencyProbe
 
-    data_dir = _get_data_dir()
-    app.state.config_manager = await _build_config_manager(data_dir)
-    app.state.settings_store = _get_settings_store(data_dir)
+    data_dir = get_data_dir()
+    app.state.config_manager = await build_config_manager(data_dir)
+    app.state.settings_store = get_settings_store(data_dir)
     app.state.network_probe = LatencyProbe(timeout_seconds=10.0)
 
     yield

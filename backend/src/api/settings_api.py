@@ -18,7 +18,7 @@ SETTINGS_DEFAULTS = SettingsOut().model_dump()
 
 
 def _get_data_dir() -> str:
-    """获取数据目录，与 src.gui.launch._get_data_dir 逻辑一致."""
+    """获取数据目录，与 backend.src.bootstrap.get_data_dir 逻辑一致."""
     if getattr(sys, 'frozen', False):
         exe_dir = Path(sys.executable).parent
     else:
