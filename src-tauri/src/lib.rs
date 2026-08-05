@@ -5,6 +5,21 @@ use tauri::Manager;
 pub struct PythonBackend(pub Mutex<Option<Child>>);
 
 fn start_backend() -> Option<Child> {
+    // 先杀掉占用端口的旧 Python 进程
+    #[cfg(target_os = "windows")]
+    {
+        use std::os::windows::process::CommandExt;
+        let _ = Command::new("taskkill")
+            .args(["/F", "/FI", "IMAGENAME eq python.exe"])
+            .creation_flags(0x08000000) // CREATE_NO_WINDOW
+            .output();
+    }
+    #[cfg(not(target_os = "windows"))]
+    {
+        let _ = Command::new("pkill").arg("-f").arg("python").output();
+    }
+    std::thread::sleep(std::time::Duration::from_millis(500));
+
     // 将 CWD 设为 exe 所在目录，确保能找到 backend/ 和 src/
     let exe_dir = std::env::current_exe()
         .ok()
