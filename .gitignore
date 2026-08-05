@@ -160,3 +160,6 @@ router_state.db
 *.key
 *.db
 *.local.yaml
+
+# Release build artifacts
+release/llm-router/
