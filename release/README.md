@@ -19,7 +19,7 @@ bash release/build.sh --python
 ```
 release/
 ├── build.sh                  # 自动化构建脚本
-└── llm-router/
+└── llm-router/               # 构建产物（git-ignored）
     ├── llm-router.exe         # Tauri 桌面应用（Windows）
     ├── frontend/
     │   └── dist/              # Vite 构建的前端静态文件
