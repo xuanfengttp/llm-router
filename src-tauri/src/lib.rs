@@ -5,6 +5,17 @@ use tauri::Manager;
 pub struct PythonBackend(pub Mutex<Option<Child>>);
 
 fn start_backend() -> Option<Child> {
+    // 将 CWD 设为 exe 所在目录，确保能找到 backend/ 和 src/
+    let exe_dir = std::env::current_exe()
+        .ok()
+        .and_then(|p| p.parent().map(|d| d.to_path_buf()));
+    if let Some(ref dir) = exe_dir {
+        eprintln!("[Tauri] Setting CWD to: {:?}", dir);
+        if let Err(e) = std::env::set_current_dir(dir) {
+            eprintln!("[Tauri] WARNING: Failed to set CWD: {}", e);
+        }
+    }
+
     match Command::new("python")
         .args([
             "-m",
