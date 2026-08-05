@@ -99,7 +99,7 @@ async def trigger_probe(request: Request, body: ProbeRequest) -> list[ProbeResul
 @router.get("/dashboard/latency")
 async def get_latency(request: Request, provider: str, model: str, limit: int = 300) -> list[LatencyRecordOut]:
     store = request.app.state.config_manager._store
-    rows = await store.get_latency_history(provider, model, limit=limit)
+    rows = await store.get_latency_merged(provider, model, limit=limit)
     return [LatencyRecordOut(**r) for r in rows]
 
 

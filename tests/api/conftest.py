@@ -30,6 +30,7 @@ def mock_store(mock_providers):
     store.init_db = AsyncMock()
     store.record_latency = AsyncMock()
     store.get_latency_history = AsyncMock(return_value=[])
+    store.get_latency_merged = AsyncMock(return_value=[])
     store.save_latency_records = AsyncMock()
     store.load_latency_series = AsyncMock(return_value=[])
     store.load_providers = MagicMock(return_value=mock_providers)

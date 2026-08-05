@@ -241,3 +241,30 @@ class ConfigStore:
             )
             for row in rows
         ]
+
+    async def get_latency_merged(
+        self, provider: str, model: str, limit: int = 300,
+    ) -> list[dict[str, Any]]:
+        """合并 latency_history 和 latency_timeseries，返回最近 N 条按时间升序."""
+        cursor = await self._conn.execute(
+            """
+            SELECT provider, model, latency_ms, timestamp,
+                   COALESCE(success, 1) as success
+            FROM (
+                SELECT provider, model, latency_ms, timestamp, NULL as success
+                FROM latency_history
+                WHERE provider = ? AND model = ?
+                UNION ALL
+                SELECT provider, model, latency_ms, timestamp,
+                       CAST(success AS INTEGER) as success
+                FROM latency_timeseries
+                WHERE provider = ? AND model = ?
+            )
+            ORDER BY timestamp DESC
+            LIMIT ?
+            """,
+            (provider, model, provider, model, limit),
+        )
+        rows = list(await cursor.fetchall())
+        rows.reverse()  # 时间升序
+        return [dict(r) for r in rows]
