@@ -71,7 +71,7 @@ else
     echo "[2/3] Skipping Python packaging (use --python to package backend)."
     echo "  Copying backend source instead..."
     mkdir -p "$RELEASE_DIR/backend"
-    cp -r "$ROOT/backend" "$RELEASE_DIR/backend/"
+    cp -r "$ROOT/backend/." "$RELEASE_DIR/backend/"
     cp -r "$ROOT/src" "$RELEASE_DIR/"
     cp "$ROOT/pyproject.toml" "$RELEASE_DIR/"
     # 清理 __pycache__ 和残留旧文件
