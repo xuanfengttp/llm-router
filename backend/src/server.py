@@ -1,6 +1,7 @@
 """LLM Router FastAPI 后端入口."""
 from __future__ import annotations
 
+import asyncio
 import sys
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -36,14 +37,48 @@ async def lifespan(app: FastAPI):
         get_settings_store,
     )
     from src.network.probe import LatencyProbe
+    from src.monitor.scheduler import MonitorScheduler
 
     data_dir = get_data_dir()
     app.state.config_manager = await build_config_manager(data_dir)
     app.state.settings_store = get_settings_store(data_dir)
     app.state.network_probe = LatencyProbe(timeout_seconds=10.0)
 
+    # 启动 MonitorScheduler 后台探测
+    scheduler = MonitorScheduler(interval_seconds=30)
+    app.state.monitor_scheduler = scheduler
+
+    async def on_probe_write(records):
+        await app.state.config_manager._store.save_latency_records(records)
+
+    from src.api.dashboard_api import broadcast_probe_result
+
+    async def on_probe_broadcast(records):
+        for r in records:
+            if r.latency_ms > 0 or not r.success:
+                await broadcast_probe_result(
+                    r.provider, r.model, r.latency_ms, r.success, r.timestamp,
+                )
+
+    scheduler.on_probe(on_probe_write)
+    scheduler.on_probe(on_probe_broadcast)
+
+    async def get_providers():
+        return await app.state.config_manager.list_providers()
+
+    task = asyncio.create_task(scheduler.start(get_providers))
+    app.state._scheduler_task = task
+
     yield
 
+    # 停止 MonitorScheduler
+    await scheduler.stop()
+    if task and not task.done():
+        task.cancel()
+        try:
+            await task
+        except asyncio.CancelledError:
+            pass
     await app.state.config_manager._store.close()
 
 
