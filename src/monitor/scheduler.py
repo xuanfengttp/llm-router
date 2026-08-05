@@ -8,6 +8,7 @@ from src.config.models import LatencyRecord, ProviderConfig
 from src.network.probe import LatencyProbe
 
 ProbeCallback = Callable[[list[LatencyRecord]], Awaitable[None]]
+ProviderGetter = Callable[[], Awaitable[list[ProviderConfig]]]
 
 
 class MonitorScheduler:
@@ -19,7 +20,7 @@ class MonitorScheduler:
     用法:
         scheduler = MonitorScheduler(interval_seconds=30)
         scheduler.on_probe(lambda records: store.save_latency_records(records))
-        await scheduler.start(providers)
+        await scheduler.start(get_providers)
         # ... 运行中 ...
         await scheduler.stop()
     """
@@ -39,12 +40,13 @@ class MonitorScheduler:
         """注册探测结果回调."""
         self._callbacks.append(callback)
 
-    async def start(self, providers: list[ProviderConfig]) -> None:
+    async def start(self, get_providers: ProviderGetter) -> None:
         """启动定时探测循环."""
         self._running = True
         try:
             while self._running:
-                if providers:
+                providers = await get_providers()
+                if providers:  # 每次循环动态获取最新 providers
                     probe_results = await self._probe.probe_all(providers)
                     records = [
                         LatencyRecord(

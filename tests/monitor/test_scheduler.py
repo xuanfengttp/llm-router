@@ -35,7 +35,9 @@ class TestMonitorScheduler:
         scheduler.on_probe(collect)
 
         # 使用空 Provider 列表，验证回调机制
-        task = asyncio.create_task(scheduler.start([]))
+        async def get_providers():
+            return []
+        task = asyncio.create_task(scheduler.start(get_providers))
         await asyncio.sleep(0.3)
         await scheduler.stop()
         task.cancel()
@@ -53,7 +55,9 @@ class TestMonitorScheduler:
         scheduler = MonitorScheduler(interval_seconds=1.0)
         assert scheduler.is_running is False
 
-        task = asyncio.create_task(scheduler.start([]))
+        async def get_providers():
+            return []
+        task = asyncio.create_task(scheduler.start(get_providers))
         await asyncio.sleep(0.05)
         assert scheduler.is_running is True
 
@@ -70,7 +74,9 @@ class TestMonitorScheduler:
     async def test_multiple_stop_is_idempotent(self):
         """重复停止不报错."""
         scheduler = MonitorScheduler(interval_seconds=1.0)
-        task = asyncio.create_task(scheduler.start([]))
+        async def get_providers():
+            return []
+        task = asyncio.create_task(scheduler.start(get_providers))
         await asyncio.sleep(0.05)
         await scheduler.stop()
         await scheduler.stop()  # 第二次无害
@@ -96,7 +102,9 @@ class TestMonitorScheduler:
         scheduler.on_probe(cb_a)
         scheduler.on_probe(cb_b)
 
-        task = asyncio.create_task(scheduler.start([]))
+        async def get_providers():
+            return []
+        task = asyncio.create_task(scheduler.start(get_providers))
         await asyncio.sleep(0.3)
         await scheduler.stop()
         task.cancel()
