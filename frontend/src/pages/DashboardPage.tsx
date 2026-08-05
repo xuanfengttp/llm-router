@@ -40,6 +40,7 @@ export default function DashboardPage() {
     toggleModel,
     appendLatency,
     latencyCache,
+    setLatencyCache,
   } = useAppStore();
   const [activeTab, setActiveTab] = useState<string>('');
   const [probing, setProbing] = useState(false);
@@ -62,6 +63,31 @@ export default function DashboardPage() {
   const currentProvider = providers.find(p => p.name === activeTab);
   const currentModels = currentProvider?.models || [];
   const activeModels = selectedModels[activeTab] || [];
+
+  // Load latency history from SQLite when active tab or models change
+  useEffect(() => {
+    const tab = activeTab;
+    const models = activeModels;
+    if (!tab || models.length === 0) return;
+
+    let cancelled = false;
+    (async () => {
+      const allRecords: LatencyRecordOut[] = [];
+      for (const model of models) {
+        try {
+          const records = await api.getLatency(tab, model, 300);
+          allRecords.push(...records);
+        } catch {
+          // Ignore per-model load failures
+        }
+      }
+      if (!cancelled && allRecords.length > 0) {
+        allRecords.sort((a, b) => a.timestamp.localeCompare(b.timestamp));
+        setLatencyCache(allRecords);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [activeTab, JSON.stringify(activeModels)]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Stabilise activeTab via ref so the interval always probes the right provider
   const activeTabRef = useRef(activeTab);
