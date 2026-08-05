@@ -14,9 +14,34 @@ if _backend_root not in sys.path:
     sys.path.insert(0, _backend_root)
 
 from src.schemas import DashboardStatusOut, ProbeRequest, ProbeResultOut, LatencyRecordOut  # noqa: E402
+from src.config.models import LatencyRecord  # noqa: E402
 
 router = APIRouter(tags=["dashboard"])
 _active_subscriptions: dict[WebSocket, dict] = {}
+
+
+async def broadcast_probe_result(
+    provider: str, model: str,
+    latency_ms: float, success: bool, timestamp: str,
+) -> None:
+    """向订阅了此 provider+model 的 WebSocket 客户端推送探测结果."""
+    dead: list[WebSocket] = []
+    for ws, sub in _active_subscriptions.items():
+        provider_models = sub.get(provider, [])
+        if model in provider_models:
+            try:
+                await ws.send_json({
+                    "type": "probe_result",
+                    "provider": provider,
+                    "model": model,
+                    "latency_ms": latency_ms,
+                    "success": success,
+                    "timestamp": timestamp,
+                })
+            except Exception:
+                dead.append(ws)
+    for ws in dead:
+        _active_subscriptions.pop(ws, None)
 
 
 @router.get("/dashboard/status")
@@ -56,6 +81,13 @@ async def trigger_probe(request: Request, body: ProbeRequest) -> list[ProbeResul
         if result.success and result.latency_ms is not None:
             await request.app.state.config_manager._store.record_latency(
                 pname, mname, result.latency_ms)
+            # 同时写入 latency_timeseries 并广播 WebSocket
+            await request.app.state.config_manager._store.save_latency_records([
+                LatencyRecord(provider=pname, model=mname,
+                              latency_ms=result.latency_ms, success=True),
+            ])
+            await broadcast_probe_result(
+                pname, mname, result.latency_ms, True, rec.timestamp)
         return rec
 
     tasks = [_probe_one(pn, mn) for pn in body.providers for mn in body.models]
