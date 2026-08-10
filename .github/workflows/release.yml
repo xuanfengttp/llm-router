@@ -1,0 +1,108 @@
+name: Release
+
+on:
+  push:
+    branches: [master]
+    tags: ['v*']
+
+jobs:
+  # ============================================================
+  # 测试 (所有 push)
+  # ============================================================
+  test:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+
+      - name: Install Python deps
+        run: pip install -e ".[dev]"
+
+      - name: Run tests
+        run: python -m pytest tests/ -v --tb=short
+
+  # ============================================================
+  # 构建 (仅 tag)
+  # ============================================================
+  build:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: test
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Build frontend
+        run: |
+          cd frontend
+          npm ci
+          npm run build
+
+      - name: Build Tauri
+        run: |
+          cd src-tauri
+          cargo build --release
+
+      - name: Package release
+        shell: bash
+        run: |
+          RELEASE_DIR="release/llm-router"
+          rm -rf "$RELEASE_DIR"
+          mkdir -p "$RELEASE_DIR"/{frontend,backend,data}
+
+          # Tauri binary
+          cp src-tauri/target/release/llm-router.exe "$RELEASE_DIR/"
+          # Frontend
+          cp -r frontend/dist "$RELEASE_DIR/frontend/"
+          # Python backend source
+          cp -r backend/. "$RELEASE_DIR/backend/"
+          cp -r src "$RELEASE_DIR/"
+          cp pyproject.toml "$RELEASE_DIR/"
+          cp config.example.yaml "$RELEASE_DIR/"
+          # Cleanup
+          find "$RELEASE_DIR" -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
+          rm -rf "$RELEASE_DIR/src/llm_router.egg-info" 2>/dev/null || true
+
+          echo "Release contents:"
+          find "$RELEASE_DIR" -type f | sort | sed "s|$RELEASE_DIR|  |"
+
+      - name: Create zip
+        shell: bash
+        run: |
+          VERSION="${GITHUB_REF#refs/tags/v}"
+          cd release
+          zip -r "llm-router-v${VERSION}-windows-x64.zip" llm-router/
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: release/llm-router-v*-windows-x64.zip
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
