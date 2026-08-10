@@ -55,6 +55,15 @@ class LatencyRecordOut(BaseModel):
     success: bool = True
 
 
+class LatencyDailyOut(BaseModel):
+    model: str
+    date: str
+    avg_ms: float
+    min_ms: float
+    max_ms: float
+    count: int
+
+
 class DashboardStatusOut(BaseModel):
     providers: list[ProviderConfigOut]
     selected_models: dict[str, list[str]]

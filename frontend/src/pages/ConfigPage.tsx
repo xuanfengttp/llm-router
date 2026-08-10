@@ -3,11 +3,13 @@ import { useAppStore } from '@/store/appStore';
 import { api } from '@/lib/api';
 import { ProviderSidebar } from './config/ProviderSidebar';
 import { ProviderDetail } from './config/ProviderDetail';
+import { useT } from '@/locales';
 
 export default function ConfigPage() {
   const { providers, setProviders, activeProvider, setActiveProvider } = useAppStore();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const t = useT();
 
   const loadProviders = useCallback(async () => {
     setLoading(true);
@@ -37,9 +39,9 @@ export default function ConfigPage() {
         onSelect={setActiveProvider}
         onRefresh={loadProviders}
       />
-      <div style={{ flex: 1, overflow: 'auto', padding: 16 }}>
+      <div style={{ flex: 1, minHeight: 0, padding: 16 }}>
         {loading && (
-          <div style={{ color: 'var(--text-secondary)', padding: 16 }}>Loading...</div>
+          <div style={{ color: 'var(--text-secondary)', padding: 16 }}>{t('加载中...')}</div>
         )}
         {error && (
           <div style={{ color: 'var(--danger)', padding: 16 }}>{error}</div>
@@ -60,7 +62,7 @@ export default function ConfigPage() {
               height: '100%',
             }}
           >
-            Select a provider or add a new one
+            {t('请选择一个 Provider 或添加新的')}
           </div>
         )}
       </div>

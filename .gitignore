@@ -161,6 +161,31 @@ router_state.db
 *.db
 *.local.yaml
 
-# Release build artifacts
+# Node / Frontend
+frontend/node_modules/
+frontend/dist/
+node_modules/
+
+# Rust / Cargo
+src-tauri/target/
+src-tauri/icons/
+
+# Release build artifacts (EXE, bundles, etc.)
 release/llm-router/
 .claude/worktrees/
+
+# Frontend dev proxy
+frontend/vite.config.ts.timestamp-*
+
+# Tailwind / PostCSS
+frontend/.oxlintrc.json
+
+# Tauri dev artifacts
+src-tauri/icons/
+src-tauri/gen/
+
+# IDE / Editor
+.idea/
+*.swp
+*.swo
+*~

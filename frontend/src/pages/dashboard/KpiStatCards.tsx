@@ -1,14 +1,17 @@
+import { useT } from '@/locales';
+
 interface KpiStatCardsProps {
   kpis: { monitored: number; p50: number; p90: number; onlineRate: number };
 }
 
 export function KpiStatCards({ kpis }: KpiStatCardsProps) {
+  const t = useT();
   return (
     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8 }}>
-      <KpiCard label="Models Monitored" value={kpis.monitored} />
-      <KpiCard label="P50 Latency" value={`${kpis.p50.toFixed(0)}ms`} />
-      <KpiCard label="P90 Latency" value={`${kpis.p90.toFixed(0)}ms`} />
-      <KpiCard label="Online Rate" value={`${kpis.onlineRate.toFixed(1)}%`} />
+      <KpiCard label={t('监控模型数')} value={kpis.monitored} />
+      <KpiCard label={t('P50 延迟')} value={`${kpis.p50.toFixed(0)}ms`} />
+      <KpiCard label={t('P90 延迟')} value={`${kpis.p90.toFixed(0)}ms`} />
+      <KpiCard label={t('在线率')} value={`${kpis.onlineRate.toFixed(1)}%`} />
     </div>
   );
 }

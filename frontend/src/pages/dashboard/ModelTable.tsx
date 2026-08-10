@@ -11,18 +11,23 @@ interface ModelTableProps {
   rows: ModelRow[];
 }
 
+import { useT } from '@/locales';
+
 export function ModelTable({ rows }: ModelTableProps) {
+  const t = useT();
   if (rows.length === 0) {
     return (
       <div style={{ fontSize: 12, color: 'var(--text-secondary)', padding: '8px 0' }}>
-        No models selected. Select models above to see latency details.
+        {t('请选择上方模型查看延迟数据')}
       </div>
     );
   }
 
+  const HEADERS = [t('模型'), t('最近延迟'), t('P50'), t('P90'), t('在线状态'), t('记录数')];
+
   return (
     <div>
-      <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 8 }}>Model Latency Details</div>
+      <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 8 }}>{t('模型延迟详情')}</div>
       <div style={{
         overflowX: 'auto',
         border: '1px solid var(--border)',
@@ -35,7 +40,7 @@ export function ModelTable({ rows }: ModelTableProps) {
         }}>
           <thead>
             <tr style={{ background: 'var(--bg-secondary)' }}>
-              {['Model', 'Last Latency', 'P50', 'P90', 'Online', 'Records'].map((h) => (
+              {HEADERS.map((h) => (
                 <th
                   key={h}
                   style={{
@@ -71,9 +76,9 @@ export function ModelTable({ rows }: ModelTableProps) {
                 </td>
                 <td style={{ padding: '6px 12px' }}>
                   {row.online === true ? (
-                    <span style={{ color: 'var(--success)' }}>Online</span>
+                    <span style={{ color: 'var(--success)' }}>{t('在线')}</span>
                   ) : row.online === false ? (
-                    <span style={{ color: 'var(--danger)' }}>Offline</span>
+                    <span style={{ color: 'var(--danger)' }}>{t('离线')}</span>
                   ) : (
                     '-'
                   )}

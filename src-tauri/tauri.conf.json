@@ -6,8 +6,7 @@
   "build": {
     "frontendDist": "../frontend/dist",
     "devUrl": "http://localhost:5173",
-    "beforeDevCommand": "npm run dev",
-    "beforeBuildCommand": "npm run build"
+    "beforeDevCommand": "npm run dev"
   },
   "app": {
     "windows": [
@@ -23,7 +22,7 @@
       }
     ],
     "security": {
-      "csp": "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; connect-src 'self' http://localhost:19876 ws://localhost:19876; img-src 'self' data:"
+      "csp": "default-src 'self' http://127.0.0.1:19876 ws://127.0.0.1:19876; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; connect-src http://127.0.0.1:19876 ws://127.0.0.1:19876; img-src 'self' data:"
     }
   },
   "bundle": {

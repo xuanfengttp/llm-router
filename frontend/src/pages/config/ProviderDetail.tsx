@@ -6,6 +6,7 @@ import { ModelTable } from './ModelTable';
 import { api } from '@/lib/api';
 import type { ProviderConfigOut } from '@/lib/types';
 import type { NewModelFields } from './ModelTable';
+import { useT } from '@/locales';
 
 interface ProviderDetailProps {
   provider: ProviderConfigOut;
@@ -19,8 +20,9 @@ export function ProviderDetail({ provider, onUpdate }: ProviderDetailProps) {
   const [testing, setTesting] = useState(false);
   const [testResult, setTestResult] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const t = useT();
 
-  const maskedKey = provider.endpoint ? '********' : '(not set)';
+  const maskedKey = provider.endpoint ? '********' : t('未设置');
 
   async function handleSaveKey() {
     if (!apiKeyValue.trim()) return;
@@ -31,7 +33,7 @@ export function ProviderDetail({ provider, onUpdate }: ProviderDetailProps) {
       setShowKey(false);
       onUpdate();
     } catch (err: unknown) {
-      if (err instanceof Error) setTestResult(`Save failed: ${err.message}`);
+      if (err instanceof Error) setTestResult(`${t('保存失败: ')}${err.message}`);
     } finally {
       setSavingKey(false);
     }
@@ -43,10 +45,10 @@ export function ProviderDetail({ provider, onUpdate }: ProviderDetailProps) {
     try {
       // Use the probe endpoint as test connection
       await api.probe([provider.name], []);
-      setTestResult('Connection successful');
+      setTestResult(t('连接成功'));
     } catch (err: unknown) {
-      if (err instanceof Error) setTestResult(`Failed: ${err.message}`);
-      else setTestResult('Failed');
+      if (err instanceof Error) setTestResult(`${t('失败: ')}${err.message}`);
+      else setTestResult(t('连接失败'));
     } finally {
       setTesting(false);
     }
@@ -97,7 +99,7 @@ export function ProviderDetail({ provider, onUpdate }: ProviderDetailProps) {
               'var(--text-secondary)',
           }}
         >
-          {provider.status || 'unknown'}
+          {provider.status || t('未知')}
         </span>
       </div>
 
@@ -112,7 +114,7 @@ export function ProviderDetail({ provider, onUpdate }: ProviderDetailProps) {
           gap: 8,
         }}
       >
-        <span style={{ fontSize: 12, color: 'var(--text-secondary)', minWidth: 60 }}>Endpoint</span>
+        <span style={{ fontSize: 12, color: 'var(--text-secondary)', minWidth: 60 }}>{t('Endpoint')}</span>
         <code
           style={{
             flex: 1,
@@ -135,7 +137,7 @@ export function ProviderDetail({ provider, onUpdate }: ProviderDetailProps) {
             padding: 4,
             display: 'flex',
           }}
-          title="Copy endpoint"
+          title={t('复制 Endpoint')}
         >
           {copied ? <Check size={14} /> : <Copy size={14} />}
         </button>
@@ -150,7 +152,7 @@ export function ProviderDetail({ provider, onUpdate }: ProviderDetailProps) {
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-          <span style={{ fontSize: 12, color: 'var(--text-secondary)', minWidth: 60 }}>API Key</span>
+          <span style={{ fontSize: 12, color: 'var(--text-secondary)', minWidth: 60 }}>{t('API 密钥')}</span>
           <code
             style={{
               flex: 1,
@@ -170,7 +172,7 @@ export function ProviderDetail({ provider, onUpdate }: ProviderDetailProps) {
               padding: 4,
               display: 'flex',
             }}
-            title={showKey ? 'Hide' : 'Show'}
+            title={showKey ? t('隐藏') : t('显示')}
           >
             {showKey ? <EyeOff size={14} /> : <Eye size={14} />}
           </button>
@@ -180,7 +182,7 @@ export function ProviderDetail({ provider, onUpdate }: ProviderDetailProps) {
             type="password"
             value={apiKeyValue}
             onChange={(e) => setApiKeyValue(e.target.value)}
-            placeholder="Enter new API key..."
+            placeholder={t('输入新的 API Key...')}
             style={{
               flex: 1,
               height: 30,
@@ -194,7 +196,7 @@ export function ProviderDetail({ provider, onUpdate }: ProviderDetailProps) {
             }}
           />
           <Button size="sm" onClick={handleSaveKey} disabled={savingKey || !apiKeyValue.trim()}>
-            {savingKey ? 'Saving...' : 'Save'}
+            {savingKey ? t('保存中...') : t('保存')}
           </Button>
         </div>
       </div>
@@ -209,11 +211,11 @@ export function ProviderDetail({ provider, onUpdate }: ProviderDetailProps) {
         >
           {testing ? (
             <>
-              <RefreshCw size={12} style={{ animation: 'spin 1s linear infinite' }} /> Testing...
+              <RefreshCw size={12} style={{ animation: 'spin 1s linear infinite' }} /> {t('测试中...')}
             </>
           ) : (
             <>
-              <Wifi size={12} /> Test Connection
+              <Wifi size={12} /> {t('测试连接')}
             </>
           )}
         </Button>
@@ -221,7 +223,7 @@ export function ProviderDetail({ provider, onUpdate }: ProviderDetailProps) {
           <span
             style={{
               fontSize: 12,
-              color: testResult.includes('Failed') ? 'var(--danger)' : 'var(--success)',
+              color: testResult.includes(t('连接失败')) ? 'var(--danger)' : 'var(--success)',
             }}
           >
             {testResult}

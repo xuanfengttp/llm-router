@@ -1,4 +1,5 @@
 import type { ProviderConfigOut } from '@/lib/types';
+import { useT } from '@/locales';
 
 interface ProviderTabsProps {
   providers: ProviderConfigOut[];
@@ -7,10 +8,11 @@ interface ProviderTabsProps {
 }
 
 export function ProviderTabs({ providers, activeTab, onSelect }: ProviderTabsProps) {
+  const t = useT();
   if (providers.length === 0) {
     return (
       <div style={{ fontSize: 12, color: 'var(--text-secondary)', padding: '8px 0' }}>
-        No providers configured. Go to Config to add one.
+        {t('暂无 Provider，请前往配置页添加')}
       </div>
     );
   }

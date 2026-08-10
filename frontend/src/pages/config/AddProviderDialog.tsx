@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { api } from '@/lib/api';
+import { useT } from '@/locales';
 
 const PRESET_PROVIDERS: { name: string; endpoint: string }[] = [
   { name: 'OpenAI', endpoint: 'https://api.openai.com/v1' },
@@ -29,6 +30,7 @@ export function AddProviderDialog({ open, onClose, onCreated }: AddProviderDialo
   const [apiKey, setApiKey] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const t = useT();
 
   if (!open) return null;
 
@@ -41,11 +43,11 @@ export function AddProviderDialog({ open, onClose, onCreated }: AddProviderDialo
 
   async function handleCreate() {
     if (!name.trim()) {
-      setError('Name is required');
+      setError(t('必填项：名称'));
       return;
     }
     if (!endpoint.trim()) {
-      setError('Endpoint is required');
+      setError(t('必填项：Endpoint'));
       return;
     }
     setSaving(true);
@@ -92,7 +94,7 @@ export function AddProviderDialog({ open, onClose, onCreated }: AddProviderDialo
       >
         {/* Header */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-          <span style={{ fontSize: 16, fontWeight: 600 }}>Add Provider</span>
+          <span style={{ fontSize: 16, fontWeight: 600 }}>{t('添加 Provider 对话框标题')}</span>
           <button
             onClick={onClose}
             style={{
@@ -110,22 +112,22 @@ export function AddProviderDialog({ open, onClose, onCreated }: AddProviderDialo
 
         {/* Tabs */}
         <div style={{ display: 'flex', gap: 0, marginBottom: 16, borderBottom: '1px solid var(--border)' }}>
-          {(['preset', 'custom'] as TabKey[]).map((t) => (
+          {(['preset', 'custom'] as TabKey[]).map((tabKey) => (
             <button
-              key={t}
-              onClick={() => setTab(t)}
+              key={tabKey}
+              onClick={() => setTab(tabKey)}
               style={{
                 padding: '6px 16px',
                 fontSize: 13,
                 background: 'transparent',
                 border: 'none',
-                borderBottom: tab === t ? '2px solid var(--accent)' : '2px solid transparent',
-                color: tab === t ? 'var(--text-primary)' : 'var(--text-secondary)',
+                borderBottom: tab === tabKey ? '2px solid var(--accent)' : '2px solid transparent',
+                color: tab === tabKey ? 'var(--text-primary)' : 'var(--text-secondary)',
                 cursor: 'pointer',
-                fontWeight: tab === t ? 600 : 400,
+                fontWeight: tab === tabKey ? 600 : 400,
               }}
             >
-              {t === 'preset' ? 'Preset' : 'Custom'}
+              {tabKey === 'preset' ? t('预置') : t('自定义')}
             </button>
           ))}
         </div>
@@ -158,16 +160,16 @@ export function AddProviderDialog({ open, onClose, onCreated }: AddProviderDialo
         {tab === 'custom' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             <label style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-              <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Name</span>
+              <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{t('名称')}</span>
               <input
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="e.g. OpenAI"
+                placeholder={t('例如 OpenAI')}
                 style={inputStyle}
               />
             </label>
             <label style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-              <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Endpoint URL</span>
+              <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{t('Endpoint 地址')}</span>
               <input
                 value={endpoint}
                 onChange={(e) => setEndpoint(e.target.value)}
@@ -176,7 +178,7 @@ export function AddProviderDialog({ open, onClose, onCreated }: AddProviderDialo
               />
             </label>
             <label style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-              <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>API Key</span>
+              <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{t('API Key')}</span>
               <input
                 type="password"
                 value={apiKey}
@@ -196,10 +198,10 @@ export function AddProviderDialog({ open, onClose, onCreated }: AddProviderDialo
         {/* Footer */}
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 20 }}>
           <Button variant="outline" size="sm" onClick={onClose}>
-            Cancel
+            {t('取消')}
           </Button>
           <Button size="sm" onClick={handleCreate} disabled={saving}>
-            {saving ? 'Creating...' : 'Create'}
+            {saving ? t('创建中...') : t('创建')}
           </Button>
         </div>
       </div>

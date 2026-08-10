@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import asyncio
+import logging
 import sys
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -40,6 +41,40 @@ async def lifespan(app: FastAPI):
     from src.monitor.scheduler import MonitorScheduler
 
     data_dir = get_data_dir()
+
+    # 配置日志：同时输出到 stdout（被 Tauri 捕获到 llm-router.log）和 data 目录下的日志文件
+    log_dir = Path(data_dir) / "logs"
+    log_dir.mkdir(parents=True, exist_ok=True)
+    log_file = log_dir / "server.log"
+
+    root_logger = logging.getLogger()
+    root_logger.setLevel(logging.INFO)
+
+    # 移除已有的 handler，避免重复添加
+    for h in root_logger.handlers[:]:
+        root_logger.removeHandler(h)
+
+    # 文件 handler
+    file_handler = logging.FileHandler(str(log_file), encoding="utf-8")
+    file_handler.setLevel(logging.INFO)
+    file_handler.setFormatter(logging.Formatter(
+        "%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S",
+    ))
+    root_logger.addHandler(file_handler)
+
+    # 控制台 handler（stdout，会被 Tauri 捕获追加到 llm-router.log）
+    console_handler = logging.StreamHandler(sys.stdout)
+    console_handler.setLevel(logging.INFO)
+    console_handler.setFormatter(logging.Formatter(
+        "%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S",
+    ))
+    root_logger.addHandler(console_handler)
+
+    logging.getLogger("uvicorn").setLevel(logging.INFO)
+    logging.getLogger("uvicorn.access").setLevel(logging.WARNING)
+
     app.state.config_manager = await build_config_manager(data_dir)
     app.state.settings_store = get_settings_store(data_dir)
     app.state.network_probe = LatencyProbe(timeout_seconds=10.0)

@@ -1,16 +1,18 @@
 import { NavLink } from 'react-router-dom';
 import { ThemeToggle } from './ThemeToggle';
 import { LayoutDashboard, Settings2, ListTodo, ScrollText, SlidersHorizontal } from 'lucide-react';
-
-const NAV_ITEMS = [
-  { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
-  { to: '/config', icon: Settings2, label: 'Config' },
-  { to: '/tasks', icon: ListTodo, label: 'Tasks' },
-  { to: '/logs', icon: ScrollText, label: 'Logs' },
-  { to: '/settings', icon: SlidersHorizontal, label: 'Settings' },
-];
+import { useT } from '@/locales';
 
 export function NavBar() {
+  const t = useT();
+  const NAV_ITEMS = [
+    { to: '/', icon: LayoutDashboard, label: t('控制台') },
+    { to: '/config', icon: Settings2, label: t('配置') },
+    { to: '/tasks', icon: ListTodo, label: t('任务') },
+    { to: '/logs', icon: ScrollText, label: t('日志') },
+    { to: '/settings', icon: SlidersHorizontal, label: t('设置') },
+  ];
+
   return (
     <nav
       style={{

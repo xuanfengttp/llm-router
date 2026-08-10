@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Trash2, Plus, X, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import type { ModelConfigOut } from '@/lib/types';
+import { useT } from '@/locales';
 
 interface ModelTableProps {
   models: ModelConfigOut[];
@@ -17,7 +18,7 @@ export interface NewModelFields {
   cost_output_1k: number;
 }
 
-const DEPLOYMENTS = ['cloud', 'local', 'hybrid'];
+const DEPLOY_TRANSLATE: Record<string, string> = { cloud: '云端', local: '本地', hybrid: '混合' };
 
 export function ModelTable({ models, onAdd, onRemove }: ModelTableProps) {
   const [adding, setAdding] = useState(false);
@@ -28,6 +29,8 @@ export function ModelTable({ models, onAdd, onRemove }: ModelTableProps) {
   const [newCostOut, setNewCostOut] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const t = useT();
+  const DEPLOYMENTS = ['cloud', 'local', 'hybrid'];
 
   async function handleAdd() {
     if (!newName.trim()) return;
@@ -48,7 +51,7 @@ export function ModelTable({ models, onAdd, onRemove }: ModelTableProps) {
       setAdding(false);
     } catch (err: unknown) {
       if (err instanceof Error) setError(err.message);
-      else setError('Failed to add model');
+      else setError(t('添加模型失败'));
     } finally {
       setSaving(false);
     }
@@ -67,12 +70,12 @@ export function ModelTable({ models, onAdd, onRemove }: ModelTableProps) {
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <span style={{ fontSize: 14, fontWeight: 600 }}>Models ({models.length})</span>
+          <span style={{ fontSize: 14, fontWeight: 600 }}>{t('模型 (N个)')} ({models.length})</span>
           {error && <span style={{ fontSize: 11, color: 'var(--danger)' }}>{error}</span>}
         </div>
         {!adding && (
           <Button size="sm" variant="outline" onClick={() => setAdding(true)}>
-            <Plus size={12} /> Add Model
+            <Plus size={12} /> {t('添加模型')}
           </Button>
         )}
       </div>
@@ -90,7 +93,7 @@ export function ModelTable({ models, onAdd, onRemove }: ModelTableProps) {
         >
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
             <label style={formLabelStyle}>
-              <span>Name *</span>
+              <span>{t('Name *')}</span>
               <input
                 value={newName}
                 onChange={(e) => setNewName(e.target.value)}
@@ -99,19 +102,19 @@ export function ModelTable({ models, onAdd, onRemove }: ModelTableProps) {
               />
             </label>
             <label style={formLabelStyle}>
-              <span>Deployment</span>
+              <span>{t('部署方式')}</span>
               <select
                 value={newDeployment}
                 onChange={(e) => setNewDeployment(e.target.value)}
                 style={formInputStyle}
               >
                 {DEPLOYMENTS.map((d) => (
-                  <option key={d} value={d}>{d}</option>
+                  <option key={d} value={d}>{t(DEPLOY_TRANSLATE[d])}</option>
                 ))}
               </select>
             </label>
             <label style={formLabelStyle}>
-              <span>Context Window</span>
+              <span>{t('上下文窗口')}</span>
               <input
                 value={newContext}
                 onChange={(e) => setNewContext(e.target.value)}
@@ -121,7 +124,7 @@ export function ModelTable({ models, onAdd, onRemove }: ModelTableProps) {
             </label>
             <div style={{ display: 'flex', gap: 8 }}>
               <label style={formLabelStyle}>
-                <span>Cost In ($/1k)</span>
+                <span>{t('输入成本 ($/1k)')}</span>
                 <input
                   value={newCostIn}
                   onChange={(e) => setNewCostIn(e.target.value)}
@@ -132,7 +135,7 @@ export function ModelTable({ models, onAdd, onRemove }: ModelTableProps) {
                 />
               </label>
               <label style={formLabelStyle}>
-                <span>Cost Out ($/1k)</span>
+                <span>{t('输出成本 ($/1k)')}</span>
                 <input
                   value={newCostOut}
                   onChange={(e) => setNewCostOut(e.target.value)}
@@ -146,12 +149,12 @@ export function ModelTable({ models, onAdd, onRemove }: ModelTableProps) {
           </div>
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 10 }}>
             <Button size="sm" variant="ghost" onClick={cancelAdd}>
-              <X size={12} /> Cancel
+              <X size={12} /> {t('取消')}
             </Button>
             <Button size="sm" onClick={handleAdd} disabled={saving || !newName.trim()}>
-              {saving ? 'Adding...' : (
+              {saving ? t('添加中...') : (
                 <>
-                  <Check size={12} /> Add
+                  <Check size={12} /> {t('添加')}
                 </>
               )}
             </Button>
@@ -165,10 +168,10 @@ export function ModelTable({ models, onAdd, onRemove }: ModelTableProps) {
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
             <thead>
               <tr style={{ background: 'var(--bg-secondary)' }}>
-                <th style={thStyle}>Name</th>
-                <th style={thStyle}>Deployment</th>
-                <th style={{ ...thStyle, textAlign: 'right' }}>Context</th>
-                <th style={{ ...thStyle, textAlign: 'right' }}>Cost In/Out ($1k)</th>
+                <th style={thStyle}>{t('名称')}</th>
+                <th style={thStyle}>{t('部署方式')}</th>
+                <th style={{ ...thStyle, textAlign: 'right' }}>{t('上下文')}</th>
+                <th style={{ ...thStyle, textAlign: 'right' }}>{t('成本 (入/出 $1k)')}</th>
                 <th style={{ ...thStyle, width: 40 }}></th>
               </tr>
             </thead>
@@ -221,7 +224,7 @@ export function ModelTable({ models, onAdd, onRemove }: ModelTableProps) {
                           m.deployment === 'local' ? 'var(--success)' : 'var(--warning)',
                       }}
                     >
-                      {m.deployment}
+                      {t(DEPLOY_TRANSLATE[m.deployment] || m.deployment)}
                     </span>
                   </td>
                   <td style={{ ...tdStyle, textAlign: 'right' }}>
@@ -235,7 +238,7 @@ export function ModelTable({ models, onAdd, onRemove }: ModelTableProps) {
                   <td style={{ ...tdStyle, textAlign: 'center' }}>
                     <button
                       onClick={async () => {
-                        if (!confirm(`Remove model "${m.name}"?`)) return;
+                        if (!confirm(t('确定删除模型 "{}"？').replace('{}', m.name))) return;
                         try {
                           await onRemove(m.name);
                         } catch (err: unknown) {
@@ -250,7 +253,7 @@ export function ModelTable({ models, onAdd, onRemove }: ModelTableProps) {
                         padding: 4,
                         display: 'flex',
                       }}
-                      title="Remove model"
+                      title={t('删除模型')}
                     >
                       <Trash2 size={12} />
                     </button>
@@ -271,7 +274,7 @@ export function ModelTable({ models, onAdd, onRemove }: ModelTableProps) {
             borderRadius: 6,
           }}
         >
-          No models configured for this provider
+          {t('暂无模型')}
         </div>
       )}
     </div>

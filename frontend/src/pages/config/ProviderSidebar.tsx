@@ -5,6 +5,7 @@ import { StatusDot } from '@/components/StatusDot';
 import { AddProviderDialog } from './AddProviderDialog';
 import type { ProviderConfigOut } from '@/lib/types';
 import { api } from '@/lib/api';
+import { useT } from '@/locales';
 
 const PRESET_CHIPS = ['OpenAI', 'Anthropic', 'Google', 'Groq', 'DeepSeek'];
 
@@ -22,10 +23,11 @@ export function ProviderSidebar({
   onRefresh,
 }: ProviderSidebarProps) {
   const [addOpen, setAddOpen] = useState(false);
+  const t = useT();
 
   async function handleDelete(name: string, e: React.MouseEvent) {
     e.stopPropagation();
-    if (!confirm(`Delete provider "${name}"? This will also remove all its models.`)) return;
+    if (!confirm(t('确定删除 Provider "{}" 及其所有模型？').replace('{}', name))) return;
     try {
       await api.deleteProvider(name);
       onRefresh();
@@ -50,7 +52,7 @@ export function ProviderSidebar({
         {/* Header */}
         <div style={{ padding: '8px 12px', borderBottom: '1px solid var(--border)' }}>
           <Button size="sm" onClick={() => setAddOpen(true)} style={{ width: '100%' }}>
-            <Plus size={14} /> Add Provider
+            <Plus size={14} /> {t('添加 Provider')}
           </Button>
         </div>
 
@@ -123,7 +125,7 @@ export function ProviderSidebar({
                     display: 'flex',
                     opacity: 0.6,
                   }}
-                  title="Delete provider"
+                  title={t('删除 Provider')}
                 >
                   <Trash2 size={12} />
                 </button>
@@ -140,7 +142,7 @@ export function ProviderSidebar({
                 textAlign: 'center',
               }}
             >
-              No providers configured
+              {t('暂无 Provider')}
             </div>
           )}
         </div>

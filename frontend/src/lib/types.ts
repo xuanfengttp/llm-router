@@ -31,6 +31,15 @@ export interface LatencyRecordOut {
   success: boolean;
 }
 
+export interface LatencyDailyOut {
+  model: string;
+  date: string;
+  avg_ms: number;
+  min_ms: number;
+  max_ms: number;
+  count: number;
+}
+
 export interface SettingsOut {
   strategy: string;
   latency_redline_ms: number;

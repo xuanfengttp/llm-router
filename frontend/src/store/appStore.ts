@@ -29,18 +29,18 @@ interface AppState {
 }
 
 export const useAppStore = create<AppState>((set) => ({
-  // Theme -- init from localStorage
-  theme: (localStorage.getItem('llm-router-theme') as 'dark' | 'light') || 'dark',
+  // Theme -- init from localStorage, default light
+  theme: (localStorage.getItem('llm-router-theme') as 'dark' | 'light') || 'light',
   toggleTheme: () =>
     set((s) => {
       const next = s.theme === 'dark' ? 'light' : 'dark';
       localStorage.setItem('llm-router-theme', next);
-      document.documentElement.className = next;
+      document.documentElement.className = next === 'dark' ? 'dark' : '';
       return { theme: next };
     }),
   setTheme: (t) => {
     localStorage.setItem('llm-router-theme', t);
-    document.documentElement.className = t;
+    document.documentElement.className = t === 'dark' ? 'dark' : '';
     set({ theme: t });
   },
 
@@ -88,7 +88,7 @@ export const useAppStore = create<AppState>((set) => ({
     night_end: 6,
     weekend_all_day: true,
     allow_weekday_day: false,
-    theme: 'dark',
+    theme: 'light',
     language: 'zh',
     data_dir: '',
   },

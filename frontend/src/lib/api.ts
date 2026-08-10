@@ -1,6 +1,8 @@
-import type { ProviderConfigOut, ProbeResultOut, LatencyRecordOut, SettingsOut, TaskOut } from '@/lib/types';
+import type { ProviderConfigOut, ProbeResultOut, LatencyRecordOut, LatencyDailyOut, SettingsOut, TaskOut } from '@/lib/types';
 
-const BASE = import.meta.env.PROD ? 'http://localhost:19876' : '';
+// Tauri 内运行：页面走 tauri://localhost asset protocol
+// API 请求跨域到本地 Python 后端 http://127.0.0.1:19876
+const BASE = 'http://127.0.0.1:19876';
 
 async function fetchJSON<T>(url: string, options?: RequestInit): Promise<T> {
   const res = await fetch(BASE + url, {
@@ -41,6 +43,10 @@ export const api = {
   getLatency: (provider: string, model: string, limit?: number) =>
     fetchJSON<LatencyRecordOut[]>(
       `/api/dashboard/latency?provider=${encodeURIComponent(provider)}&model=${encodeURIComponent(model)}&limit=${limit ?? 300}`
+    ),
+  getLatencyDaily: (provider: string, model: string, days?: number) =>
+    fetchJSON<LatencyDailyOut[]>(
+      `/api/dashboard/latency/daily?provider=${encodeURIComponent(provider)}&model=${encodeURIComponent(model)}&days=${days ?? 30}`
     ),
 
   // Tasks

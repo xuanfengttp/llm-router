@@ -1,20 +1,10 @@
 @import "tailwindcss";
 
-:root {
-  --bg-primary: #1e1e1e;
-  --bg-secondary: #252526;
-  --bg-card: #2d2d2d;
-  --bg-hover: #383838;
-  --border: #3c3c3c;
-  --text-primary: #cccccc;
-  --text-secondary: #858585;
-  --accent: #007acc;
-  --success: #4ec9b0;
-  --warning: #cca700;
-  --danger: #f44747;
+*, *::before, *::after {
+  box-sizing: border-box;
 }
 
-.light {
+:root {
   --bg-primary: #ffffff;
   --bg-secondary: #f3f3f3;
   --bg-card: #ffffff;
@@ -28,7 +18,23 @@
   --danger: #cd3131;
 }
 
-body {
+.dark {
+  --bg-primary: #1e1e1e;
+  --bg-secondary: #252526;
+  --bg-card: #2d2d2d;
+  --bg-hover: #383838;
+  --border: #3c3c3c;
+  --text-primary: #cccccc;
+  --text-secondary: #858585;
+  --accent: #007acc;
+  --success: #4ec9b0;
+  --warning: #cca700;
+  --danger: #f44747;
+}
+
+html, body {
+  height: 100%;
+  overflow: hidden;
   background: var(--bg-primary);
   color: var(--text-primary);
   font-size: 13px;
@@ -36,7 +42,8 @@ body {
 }
 
 #root {
-  min-height: 100vh;
+  height: 100%;
+  overflow: hidden;
 }
 
 @keyframes spin {

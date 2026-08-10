@@ -4,17 +4,9 @@ import { api } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { AlertCircle, Check } from 'lucide-react';
 import type { SettingsOut } from '@/lib/types';
+import { useT } from '@/locales';
 
 type SettingsSection = 'strategy' | 'params' | 'time' | 'appearance' | 'data' | 'about';
-
-const SECTIONS: { key: SettingsSection; label: string }[] = [
-  { key: 'strategy', label: 'Strategy' },
-  { key: 'params', label: 'Params' },
-  { key: 'time', label: 'Time' },
-  { key: 'appearance', label: 'Appearance' },
-  { key: 'data', label: 'Data' },
-  { key: 'about', label: 'About' },
-];
 
 export default function SettingsPage() {
   const { settings, setSettings: updateStoreSettings, setTheme: updateTheme } = useAppStore();
@@ -24,6 +16,16 @@ export default function SettingsPage() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const successTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const t = useT();
+
+  const SECTIONS: { key: SettingsSection; label: string }[] = [
+    { key: 'strategy', label: t('路由策略') },
+    { key: 'params', label: t('参数') },
+    { key: 'time', label: t('时间') },
+    { key: 'appearance', label: t('外观') },
+    { key: 'data', label: t('数据') },
+    { key: 'about', label: t('关于') },
+  ];
 
   useEffect(() => { setForm(settings); }, [settings]);
 
@@ -55,7 +57,7 @@ export default function SettingsPage() {
   }
 
   return (
-    <div style={{ display: 'flex', height: '100%' }}>
+    <div style={{ display: 'flex', height: '100%', minHeight: 0 }}>
       {/* Sidebar */}
       <div style={{ width: 180, borderRight: '1px solid var(--border)', padding: '8px 0', overflow: 'auto' }}>
         {SECTIONS.map(s => (
@@ -83,7 +85,7 @@ export default function SettingsPage() {
           </span>
           {section !== 'about' && (
             <Button size="sm" onClick={handleSave} disabled={saving}>
-              {saving ? 'Saving...' : 'Save'}
+              {saving ? t('保存中...') : t('保存')}
             </Button>
           )}
         </div>
@@ -99,32 +101,32 @@ export default function SettingsPage() {
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 12px', marginBottom: 8,
             borderRadius: 6, background: 'color-mix(in srgb, var(--success) 15%, transparent)',
             color: 'var(--success)', fontSize: 12 }}>
-            <Check size={14} /> Settings saved
+            <Check size={14} /> {t('设置已保存')}
           </div>
         )}
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           {section === 'strategy' && (
-            <RadioGroupField label="Routing Strategy" value={form.strategy}
+            <RadioGroupField label={t('路由策略字段')} value={form.strategy}
               options={[
-                { value: 'baseline', label: 'Baseline — simple round-robin' },
-                { value: 'cost_optimized', label: 'Cost Optimized — cheapest first' },
-                { value: 'predictive', label: 'Predictive — ML-driven selection' },
+                { value: 'baseline', label: t('基准 — 简单轮询') },
+                { value: 'cost_optimized', label: t('成本优先 — 最便宜优先') },
+                { value: 'predictive', label: t('预测性 — ML 驱动选择') },
               ]}
               onChange={v => update('strategy', v as SettingsOut['strategy'])} />
           )}
 
           {section === 'params' && (
             <>
-              <SliderField label="Latency Redline (ms)" value={form.latency_redline_ms}
+              <SliderField label={t('延迟红线 (ms)')} value={form.latency_redline_ms}
                 min={500} max={30000} step={100}
                 onChange={v => update('latency_redline_ms', v)} />
-              <SliderField label="Predictability Threshold" value={form.predictability_threshold}
+              <SliderField label={t('可预测性阈值')} value={form.predictability_threshold}
                 min={0.05} max={2.0} step={0.05}
                 onChange={v => update('predictability_threshold', v)} />
-              <NumberField label="Cycle Seconds" value={form.cycle_seconds}
+              <NumberField label={t('探测周期 (秒)')} value={form.cycle_seconds}
                 onChange={v => update('cycle_seconds', v)} />
-              <NumberField label="Max Retries" value={form.max_retries}
+              <NumberField label={t('最大重试次数')} value={form.max_retries}
                 onChange={v => update('max_retries', v)} />
             </>
           )}
@@ -132,30 +134,30 @@ export default function SettingsPage() {
           {section === 'time' && (
             <>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-                <NumberField label="Night Start (hour)" value={form.night_start} min={0} max={23}
+                <NumberField label={t('夜间开始 (小时)')} value={form.night_start} min={0} max={23}
                   onChange={v => update('night_start', v)} />
-                <NumberField label="Night End (hour)" value={form.night_end} min={0} max={23}
+                <NumberField label={t('夜间结束 (小时)')} value={form.night_end} min={0} max={23}
                   onChange={v => update('night_end', v)} />
               </div>
-              <SwitchField label="Weekend All Day" checked={form.weekend_all_day}
+              <SwitchField label={t('周末全天')} checked={form.weekend_all_day}
                 onChange={v => update('weekend_all_day', v)} />
-              <SwitchField label="Allow Weekday Day" checked={form.allow_weekday_day}
+              <SwitchField label={t('允许工作日白天')} checked={form.allow_weekday_day}
                 onChange={v => update('allow_weekday_day', v)} />
             </>
           )}
 
           {section === 'appearance' && (
             <>
-              <RadioGroupField label="Theme" value={form.theme}
+              <RadioGroupField label={t('主题')} value={form.theme}
                 options={[
-                  { value: 'dark', label: 'Dark' },
-                  { value: 'light', label: 'Light' },
+                  { value: 'dark', label: t('暗色') },
+                  { value: 'light', label: t('亮色') },
                 ]}
                 onChange={v => update('theme', v as 'dark' | 'light')} />
-              <RadioGroupField label="Language" value={form.language}
+              <RadioGroupField label={t('语言')} value={form.language}
                 options={[
-                  { value: 'zh', label: '中文' },
-                  { value: 'en', label: 'English' },
+                  { value: 'zh', label: t('中文') },
+                  { value: 'en', label: t('English') },
                 ]}
                 onChange={v => update('language', v as 'zh' | 'en')} />
             </>
@@ -163,8 +165,8 @@ export default function SettingsPage() {
 
           {section === 'data' && (
             <div style={{ padding: 12, background: 'var(--bg-secondary)', borderRadius: 6 }}>
-              <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 4 }}>Data Directory</div>
-              <code style={{ fontSize: 12, wordBreak: 'break-all' }}>{form.data_dir || '(not set)'}</code>
+              <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 4 }}>{t('数据目录')}</div>
+              <code style={{ fontSize: 12, wordBreak: 'break-all' }}>{form.data_dir || t('未设置')}</code>
             </div>
           )}
 
@@ -173,8 +175,10 @@ export default function SettingsPage() {
               <div style={{ fontSize: 18, fontWeight: 700, marginBottom: 4 }}>LLM Router</div>
               <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 8 }}>v2.0.0</div>
               <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
-                Intelligent multi-model routing with predictive latency optimization.
-                Built with Tauri + React + FastAPI.
+                {t('智能多模型路由，带预测延迟优化')}
+              </div>
+              <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 4 }}>
+                {t('基于 Tauri + React + FastAPI 构建')}
               </div>
             </div>
           )}

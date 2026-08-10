@@ -13,7 +13,7 @@ _backend_root = str(Path(__file__).parent.parent.parent.resolve())
 if _backend_root not in sys.path:
     sys.path.insert(0, _backend_root)
 
-from src.schemas import DashboardStatusOut, ProbeRequest, ProbeResultOut, LatencyRecordOut  # noqa: E402
+from src.schemas import DashboardStatusOut, ProbeRequest, ProbeResultOut, LatencyRecordOut, LatencyDailyOut  # noqa: E402
 from src.config.models import LatencyRecord  # noqa: E402
 
 router = APIRouter(tags=["dashboard"])
@@ -101,6 +101,13 @@ async def get_latency(request: Request, provider: str, model: str, limit: int = 
     store = request.app.state.config_manager._store
     rows = await store.get_latency_merged(provider, model, limit=limit)
     return [LatencyRecordOut(**r) for r in rows]
+
+
+@router.get("/dashboard/latency/daily")
+async def get_latency_daily(request: Request, provider: str, model: str, days: int = 30) -> list[LatencyDailyOut]:
+    store = request.app.state.config_manager._store
+    rows = await store.get_latency_daily_aggregation(provider, model, days=days)
+    return [LatencyDailyOut(**r) for r in rows]
 
 
 @router.websocket("/ws/dashboard")

@@ -68,7 +68,7 @@ class LatencyProbe:
                     return ProbeResult(
                         provider=provider,
                         model=model,
-                        success=resp.status < 500,
+                        success=200 <= resp.status < 300,
                         latency_ms=round(elapsed_ms, 2),
                     )
         except aiohttp.ClientError as e:
@@ -94,11 +94,14 @@ class LatencyProbe:
             )
 
     async def ping_models_endpoint(
-        self, provider: str, endpoint: str
+        self, provider: str, endpoint: str, api_key: str | None = None
     ) -> ProbeResult:
         """探测 /v1/models 端点 (GET)."""
         url = f"{endpoint.rstrip('/')}/models"
-        return await self._measure(provider, "all", url, method="GET")
+        headers: dict[str, str] = {}
+        if api_key:
+            headers["Authorization"] = f"Bearer {api_key}"
+        return await self._measure(provider, "all", url, method="GET", headers=headers)
 
     async def ping_chat_endpoint(
         self,
@@ -107,13 +110,19 @@ class LatencyProbe:
         endpoint: str,
         api_key: str | None = None,
     ) -> ProbeResult:
-        """探测 /chat/completions 端点 (POST 空请求体，仅验证可达性)."""
+        """探测 /chat/completions 端点 (POST 最小有效请求体，验证真实推理可达性)."""
         url = f"{endpoint.rstrip('/')}/chat/completions"
         headers = {"Content-Type": "application/json"}
         if api_key:
             headers["Authorization"] = f"Bearer {api_key}"
+        # 发送最小有效请求：1 token max_tokens 避免消耗
+        body = {
+            "model": model,
+            "messages": [{"role": "user", "content": "ping"}],
+            "max_tokens": 1,
+        }
         return await self._measure(
-            provider, model, url, method="POST", headers=headers, json_body={}
+            provider, model, url, method="POST", headers=headers, json_body=body
         )
 
     async def probe_all(
@@ -130,7 +139,7 @@ class LatencyProbe:
         async def probe_one(provider: ProviderConfig) -> None:
             # 1. 基本连通性
             result = await self.ping_models_endpoint(
-                provider.name, provider.endpoint
+                provider.name, provider.endpoint, provider.api_key
             )
             results.append(result)
 

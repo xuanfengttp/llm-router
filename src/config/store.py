@@ -268,3 +268,37 @@ class ConfigStore:
         rows = list(await cursor.fetchall())
         rows.reverse()  # 时间升序
         return [dict(r) for r in rows]
+
+    async def get_latency_daily_aggregation(
+        self, provider: str, model: str, days: int = 30,
+    ) -> list[dict[str, Any]]:
+        """按天聚合延迟数据，返回每日 min/max/avg.
+
+        合并 latency_history 和 latency_timeseries 两表，按 date(timestamp)
+        分组聚合，限制最近 N 天，按日期升序返回。
+        """
+        cursor = await self._conn.execute(
+            """
+            SELECT model, date, MIN(latency_ms) as min_ms,
+                   MAX(latency_ms) as max_ms,
+                   AVG(latency_ms) as avg_ms,
+                   COUNT(*) as count
+            FROM (
+                SELECT ? as model, date(timestamp) as date, latency_ms
+                FROM latency_history
+                WHERE provider = ? AND model = ?
+                  AND timestamp >= date('now', ?)
+                UNION ALL
+                SELECT ? as model, date(timestamp) as date, latency_ms
+                FROM latency_timeseries
+                WHERE provider = ? AND model = ?
+                  AND timestamp >= date('now', ?)
+            )
+            GROUP BY date
+            ORDER BY date ASC
+            """,
+            (model, provider, model, f'-{days} days',
+             model, provider, model, f'-{days} days'),
+        )
+        rows = await cursor.fetchall()
+        return [dict(r) for r in rows]

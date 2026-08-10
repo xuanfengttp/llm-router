@@ -7,9 +7,10 @@ import { LatencyChart } from './dashboard/LatencyChart';
 import { ModelTable } from './dashboard/ModelTable';
 import { ProviderTabs } from './dashboard/ProviderTabs';
 import { ModelChipGrid } from './dashboard/ModelChipGrid';
-import type { LatencyRecordOut, ProbeResultOut } from '@/lib/types';
+import type { LatencyRecordOut, LatencyDailyOut, ProbeResultOut } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Play, AlertCircle } from 'lucide-react';
+import { useT } from '@/locales';
 
 const AUTO_PROBE_INTERVAL_MS = 30_000;
 
@@ -45,12 +46,14 @@ export default function DashboardPage() {
   const [activeTab, setActiveTab] = useState<string>('');
   const [probing, setProbing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [dailyCache, setDailyCache] = useState<LatencyDailyOut[]>([]);
+  const t = useT();
 
   // Load providers on mount
   useEffect(() => {
     api.listProviders()
       .then(data => { setProviders(data); setError(null); })
-      .catch(() => setError('Failed to load providers'));
+      .catch(() => setError(t('加载 Provider 失败')));
   }, [setProviders]);
 
   // Set first provider as active tab
@@ -84,6 +87,30 @@ export default function DashboardPage() {
       if (!cancelled && allRecords.length > 0) {
         allRecords.sort((a, b) => a.timestamp.localeCompare(b.timestamp));
         setLatencyCache(allRecords);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [activeTab, JSON.stringify(activeModels)]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Load daily aggregation when active tab or models change
+  useEffect(() => {
+    const tab = activeTab;
+    const models = activeModels;
+    if (!tab || models.length === 0) return;
+
+    let cancelled = false;
+    (async () => {
+      const allDaily: LatencyDailyOut[] = [];
+      for (const model of models) {
+        try {
+          const rows = await api.getLatencyDaily(tab, model, 30);
+          allDaily.push(...rows);
+        } catch {
+          // Ignore per-model load failures
+        }
+      }
+      if (!cancelled) {
+        setDailyCache(allDaily);
       }
     })();
     return () => { cancelled = true; };
@@ -126,7 +153,7 @@ export default function DashboardPage() {
     }
   }, [appendLatency]);
 
-  const wsUrl = `ws://localhost:19876/api/ws/dashboard`;
+  const wsUrl = `ws://127.0.0.1:19876/api/ws/dashboard`;
   const { send } = useWebSocket<WsProbeMessage>(wsUrl, handleWsMessage);
 
   // Subscribe to selected models via WebSocket (only when selectedModels change)
@@ -185,7 +212,7 @@ export default function DashboardPage() {
   function onProbeClick() { handleProbe(); }
 
   return (
-    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', overflow: 'auto', padding: 12 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', padding: 12 }}>
       {/* Error banner */}
       {error && (
         <div style={{
@@ -215,10 +242,10 @@ export default function DashboardPage() {
       {/* Probe button */}
       <div style={{ margin: '8px 0', display: 'flex', alignItems: 'center', gap: 8 }}>
         <Button size="sm" onClick={onProbeClick} disabled={probing || activeModels.length === 0}>
-          <Play size={12} /> {probing ? 'Probing...' : 'Probe All'}
+          <Play size={12} /> {probing ? t('探测中...') : t('全部探测')}
         </Button>
         <span style={{ fontSize: 11, color: 'var(--text-secondary)' }}>
-          {activeModels.length} model(s) selected
+          {activeModels.length}{t('个模型已选中')}
         </span>
       </div>
 
@@ -227,7 +254,7 @@ export default function DashboardPage() {
 
       {/* Latency Chart */}
       <div style={{ marginTop: 12 }}>
-        <LatencyChart records={filteredRecords} />
+        <LatencyChart records={filteredRecords} dailyRecords={dailyCache} />
       </div>
 
       {/* Model Table */}

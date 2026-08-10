@@ -30,7 +30,7 @@ async def build_config_manager(data_dir: str) -> Any:
 def get_data_dir() -> str:
     """获取数据目录（创建于用户目录下）."""
     home = Path.home()
-    data_dir = home / ".llm_router"
+    data_dir = home / ".llm_router" / "data"
     data_dir.mkdir(parents=True, exist_ok=True)
     return str(data_dir)
 

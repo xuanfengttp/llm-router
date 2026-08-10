@@ -11,7 +11,7 @@ import SettingsPage from '@/pages/SettingsPage';
 function ThemeInit() {
   const theme = useAppStore((s) => s.theme);
   useEffect(() => {
-    document.documentElement.className = theme;
+    document.documentElement.className = theme === 'dark' ? 'dark' : '';
   }, [theme]);
   return null;
 }

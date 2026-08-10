@@ -4,6 +4,14 @@ import { api } from '@/lib/api';
 import { useAppStore } from '@/store/appStore';
 import { Plus, RefreshCw, XCircle, RotateCcw, AlertCircle } from 'lucide-react';
 import type { TaskOut } from '@/lib/types';
+import { useT } from '@/locales';
+
+const STATUS_TRANSLATE: Record<string, string> = {
+  pending: '等待中',
+  running: '运行中',
+  completed: '已完成',
+  failed: '失败',
+};
 
 const STATUS_COLORS: Record<string, string> = {
   pending: 'var(--warning)',
@@ -20,6 +28,7 @@ export default function TasksPage() {
   const [prompt, setPrompt] = useState('');
   const [targetModel, setTargetModel] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const t = useT();
 
   const loadTasks = useCallback(async () => {
     setLoading(true);
@@ -59,11 +68,11 @@ export default function TasksPage() {
   }
 
   return (
-    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', overflow: 'auto', padding: 12 }}>
+    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', padding: 12 }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-        <span style={{ fontSize: 16, fontWeight: 600 }}>Tasks</span>
+        <span style={{ fontSize: 16, fontWeight: 600 }}>{t('任务')}</span>
         <Button size="sm" variant="outline" onClick={loadTasks} disabled={loading}>
-          <RefreshCw size={12} /> Refresh
+          <RefreshCw size={12} /> {t('刷新')}
         </Button>
       </div>
 
@@ -80,7 +89,7 @@ export default function TasksPage() {
         <textarea
           value={prompt}
           onChange={e => setPrompt(e.target.value)}
-          placeholder="Enter your prompt..."
+          placeholder={t('输入你的提示词...')}
           rows={3}
           style={{ width: '100%', padding: 8, borderRadius: 4, border: '1px solid var(--border)',
             background: 'var(--bg-primary)', color: 'var(--text-primary)', fontSize: 12,
@@ -93,56 +102,56 @@ export default function TasksPage() {
             style={{ height: 28, padding: '0 6px', borderRadius: 4, border: '1px solid var(--border)',
               background: 'var(--bg-primary)', color: 'var(--text-primary)', fontSize: 12, outline: 'none', flex: 1 }}
           >
-            <option value="">Any model</option>
+            <option value="">{t('任意模型')}</option>
             {providers.flatMap(p => p.models.map(m => (
               <option key={`${p.name}/${m.name}`} value={`${p.name}/${m.name}`}>{p.name}/{m.name}</option>
             )))}
           </select>
           <Button size="sm" onClick={handleCreate} disabled={submitting || !prompt.trim()}>
-            <Plus size={12} /> {submitting ? 'Submitting...' : 'Submit'}
+            <Plus size={12} /> {submitting ? t('提交中...') : t('提交')}
           </Button>
         </div>
       </div>
 
       {/* Task List */}
       {loading ? (
-        <div style={{ color: 'var(--text-secondary)', padding: 24, textAlign: 'center' }}>Loading...</div>
+        <div style={{ color: 'var(--text-secondary)', padding: 24, textAlign: 'center' }}>{t('加载中...')}</div>
       ) : tasks.length > 0 ? (
         <div style={{ border: '1px solid var(--border)', borderRadius: 6, overflow: 'hidden' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
             <thead>
               <tr style={{ background: 'var(--bg-secondary)' }}>
-                <th style={thStyle}>Task ID</th>
-                <th style={thStyle}>Prompt</th>
-                <th style={thStyle}>Target Model</th>
-                <th style={thStyle}>Status</th>
-                <th style={{ ...thStyle, width: 80 }}>Actions</th>
+                <th style={thStyle}>{t('Task ID')}</th>
+                <th style={thStyle}>{t('提示词')}</th>
+                <th style={thStyle}>{t('目标模型')}</th>
+                <th style={thStyle}>{t('状态')}</th>
+                <th style={{ ...thStyle, width: 80 }}>{t('操作')}</th>
               </tr>
             </thead>
             <tbody>
-              {tasks.map(t => (
-                <tr key={t.task_id} style={{ borderTop: '1px solid var(--border)' }}>
+              {tasks.map(task => (
+                <tr key={task.task_id} style={{ borderTop: '1px solid var(--border)' }}>
                   <td style={tdStyle}>
-                    <code style={{ fontSize: 11 }}>{t.task_id?.slice(0, 8)}...</code>
+                    <code style={{ fontSize: 11 }}>{task.task_id?.slice(0, 8)}...</code>
                   </td>
                   <td style={tdStyle}>
                     <span style={{ maxWidth: 300, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'inline-block' }}>
-                      {t.prompt || '-'}
+                      {task.prompt || '-'}
                     </span>
                   </td>
-                  <td style={tdStyle}>{t.target_model || 'auto'}</td>
+                  <td style={tdStyle}>{task.target_model || t('自动')}</td>
                   <td style={tdStyle}>
-                    <span style={{ color: STATUS_COLORS[t.status] || 'var(--text-secondary)', fontWeight: 500 }}>
-                      {t.status}
+                    <span style={{ color: STATUS_COLORS[task.status] || 'var(--text-secondary)', fontWeight: 500 }}>
+                      {t(STATUS_TRANSLATE[task.status] || task.status)}
                     </span>
                   </td>
                   <td style={{ ...tdStyle, display: 'flex', gap: 4 }}>
-                    {(t.status === 'pending' || t.status === 'running') && (
-                      <button onClick={() => handleCancel(t.task_id)} title="Cancel"
+                    {(task.status === 'pending' || task.status === 'running') && (
+                      <button onClick={() => handleCancel(task.task_id)} title={t('取消')}
                         style={iconBtnStyle}><XCircle size={14} /></button>
                     )}
-                    {t.status === 'failed' && (
-                      <button onClick={() => handleRetry(t.task_id)} title="Retry"
+                    {task.status === 'failed' && (
+                      <button onClick={() => handleRetry(task.task_id)} title={t('重试')}
                         style={iconBtnStyle}><RotateCcw size={14} /></button>
                     )}
                   </td>
@@ -154,7 +163,7 @@ export default function TasksPage() {
       ) : (
         <div style={{ padding: 24, textAlign: 'center', color: 'var(--text-secondary)', fontSize: 12,
           border: '1px solid var(--border)', borderRadius: 6 }}>
-          No tasks yet. Submit a prompt above to create one.
+          {t('暂无任务，在上方输入提示词创建')}
         </div>
       )}
     </div>
