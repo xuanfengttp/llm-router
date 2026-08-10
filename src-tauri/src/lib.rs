@@ -239,6 +239,11 @@ pub fn run() {
                 })
                 .build(app)?;
 
+            // Tauri tray-icon feature 默认隐藏窗口，需要显式显示
+            if let Some(window) = app.get_webview_window("main") {
+                let _ = window.show();
+            }
+
             Ok(())
         })
         .on_window_event(|window, event| {
