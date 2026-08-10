@@ -118,7 +118,16 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="LLM Router API", lifespan=lifespan)
-app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:5173",   # Vite dev server
+        "http://127.0.0.1:5173",  # Vite dev (alternate)
+        "tauri://localhost",       # Tauri 2 webview (production)
+    ],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # API 路由注册
 app.include_router(config_router, prefix="/api")

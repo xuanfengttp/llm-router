@@ -4,6 +4,8 @@ use std::net::TcpStream;
 use std::process::{Child, Command, Stdio};
 use std::sync::Mutex;
 use std::time::{Duration, Instant};
+use tauri::menu::{MenuBuilder, MenuItemBuilder};
+use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
 use tauri::Manager;
 
 pub struct PythonBackend(pub Mutex<Option<Child>>);
@@ -191,16 +193,72 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
         .manage(PythonBackend(Mutex::new(Some(child))))
-        .on_window_event(|window, event| {
-            if let tauri::WindowEvent::Destroyed = event {
-                if let Some(state) = window.try_state::<PythonBackend>() {
-                    if let Ok(mut guard) = state.0.lock() {
-                        if let Some(ref mut child) = *guard {
-                            kill_backend(child);
+        .setup(|app| {
+            // 托盘菜单: 显示窗口 / 退出
+            let show_item = MenuItemBuilder::with_id("show", "显示窗口").build(app)?;
+            let quit_item = MenuItemBuilder::with_id("quit", "退出").build(app)?;
+            let menu = MenuBuilder::new(app)
+                .item(&show_item)
+                .separator()
+                .item(&quit_item)
+                .build()?;
+
+            // 托盘图标: 复用已有 icon.ico
+            let icon = app.default_window_icon().cloned().unwrap();
+            let _tray = TrayIconBuilder::new()
+                .icon(icon)
+                .menu(&menu)
+                .show_menu_on_left_click(false)
+                .on_menu_event(|app, event| {
+                    match event.id().as_ref() {
+                        "show" => {
+                            if let Some(window) = app.get_webview_window("main") {
+                                let _ = window.show();
+                                let _ = window.set_focus();
+                            }
                         }
-                        *guard = None;
+                        "quit" => {
+                            app.exit(0);
+                        }
+                        _ => {}
+                    }
+                })
+                .on_tray_icon_event(|tray, event| {
+                    if let TrayIconEvent::Click {
+                        button: MouseButton::Left,
+                        button_state: MouseButtonState::Up,
+                        ..
+                    } = event
+                    {
+                        let app = tray.app_handle();
+                        if let Some(window) = app.get_webview_window("main") {
+                            let _ = window.show();
+                            let _ = window.set_focus();
+                        }
+                    }
+                })
+                .build(app)?;
+
+            Ok(())
+        })
+        .on_window_event(|window, event| {
+            match event {
+                tauri::WindowEvent::CloseRequested { api, .. } => {
+                    // 关闭窗口 → 隐藏到托盘
+                    api.prevent_close();
+                    let _ = window.hide();
+                }
+                tauri::WindowEvent::Destroyed => {
+                    if let Some(state) = window.try_state::<PythonBackend>() {
+                        if let Ok(mut guard) = state.0.lock() {
+                            if let Some(ref mut child) = *guard {
+                                kill_backend(child);
+                            }
+                            *guard = None;
+                        }
                     }
                 }
+                _ => {}
             }
         })
         .run(tauri::generate_context!())
