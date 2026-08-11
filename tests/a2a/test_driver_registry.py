@@ -39,3 +39,37 @@ class TestDriverRegistry:
         new_driver = CLIDriver(DriverConfig(name="claude", command="other"))
         registry.register(new_driver)
         assert registry.get("claude") is new_driver
+
+    def test_register_remote(self, registry):
+        from src.a2a.card_resolver import AgentCard, AgentSkill
+        from src.a2a.http_driver import A2ADriver
+
+        card = AgentCard(
+            name="remote-gpt",
+            description="Remote GPT agent",
+            url="http://remote.local/v1",
+            skills=[AgentSkill(id="chat", name="Chat", description="Chat completion")],
+            version="1.0",
+        )
+        registry.register_remote(card)
+
+        driver = registry.get("remote-gpt")
+        assert driver is not None
+        assert isinstance(driver, A2ADriver)
+        assert driver.config.name == "remote-gpt"
+        assert driver.base_url == "http://remote.local/v1"
+
+    def test_register_remote_overwrites_existing(self, registry):
+        from src.a2a.card_resolver import AgentCard, AgentSkill
+
+        card1 = AgentCard(
+            name="claude", description="", url="http://old/v1",
+            skills=[], version="1.0",
+        )
+        card2 = AgentCard(
+            name="claude", description="", url="http://new/v1",
+            skills=[], version="2.0",
+        )
+        registry.register_remote(card1)
+        registry.register_remote(card2)
+        assert registry.get("claude").base_url == "http://new/v1"
