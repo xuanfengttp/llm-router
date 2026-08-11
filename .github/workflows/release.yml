@@ -64,10 +64,8 @@ jobs:
           npm ci
           npm run build
 
-      - name: Build Tauri
-        run: |
-          cd src-tauri
-          cargo build --release
+      - name: Build Tauri (embeds frontend into exe)
+        run: npx --prefix frontend tauri build
 
       - name: Package release
         shell: bash
@@ -76,9 +74,9 @@ jobs:
           rm -rf "$RELEASE_DIR"
           mkdir -p "$RELEASE_DIR"/{frontend,backend,data}
 
-          # Tauri binary
+          # Tauri binary (frontend embedded via tauri build)
           cp src-tauri/target/release/llm-router.exe "$RELEASE_DIR/"
-          # Frontend
+          # Frontend dist (also kept on disk for debugging)
           cp -r frontend/dist "$RELEASE_DIR/frontend/"
           # Python backend source
           cp -r backend/. "$RELEASE_DIR/backend/"

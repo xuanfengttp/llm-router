@@ -86,22 +86,22 @@ fi
 echo ""
 echo "[3/3] Building Tauri desktop app..."
 cd "$ROOT"
-# Tauri build (需要 Rust + Tauri CLI)
-if command -v cargo &>/dev/null; then
-    cd "$ROOT/src-tauri"
-    cargo build --release 2>&1 | tail -5
-    if [ -f "target/release/llm-router.exe" ]; then
-        cp "target/release/llm-router.exe" "$RELEASE_DIR/"
+# 必须用 tauri build（而非 cargo build），否则前端 dist 不会嵌入 exe，
+# 运行时 webview 加载不到资源 → "localhost 拒绝连接"。
+if command -v npx &>/dev/null; then
+    npx --prefix frontend tauri build 2>&1 | tail -10
+    if [ -f "src-tauri/target/release/llm-router.exe" ]; then
+        cp "src-tauri/target/release/llm-router.exe" "$RELEASE_DIR/"
         echo "  llm-router.exe → release/llm-router/"
-    elif [ -f "target/release/llm-router" ]; then
-        cp "target/release/llm-router" "$RELEASE_DIR/"
+    elif [ -f "src-tauri/target/release/llm-router" ]; then
+        cp "src-tauri/target/release/llm-router" "$RELEASE_DIR/"
         echo "  llm-router → release/llm-router/"
     else
-        echo "  WARNING: Tauri binary not found in target/release/"
+        echo "  WARNING: Tauri binary not found in src-tauri/target/release/"
     fi
 else
-    echo "  WARNING: cargo not found, skipping Tauri build."
-    echo "  Install Rust: https://rustup.rs"
+    echo "  WARNING: npx not found, skipping Tauri build."
+    echo "  Install Node.js: https://nodejs.org"
 fi
 
 echo ""
