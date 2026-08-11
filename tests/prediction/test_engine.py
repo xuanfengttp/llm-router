@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 import pytest
 
@@ -28,7 +28,7 @@ class TestLatencyPrediction:
 
 
 class TestPredictionEngine:
-    """预测引擎测试."""
+    """预测引擎测试 — 走短期路径（不依赖 neuralforecast）."""
 
     @pytest.fixture
     def sample_records(self) -> list[LatencyRecord]:
@@ -53,14 +53,40 @@ class TestPredictionEngine:
         records.sort(key=lambda r: r.timestamp)
         return records
 
+    @pytest.fixture
+    def multi_provider_data(self) -> dict[str, dict[str, list[LatencyRecord]]]:
+        """多个 provider 的延迟记录."""
+        data: dict[str, dict[str, list[LatencyRecord]]] = {}
+        for provider in ["openai", "anthropic"]:
+            data[provider] = {}
+            for model_name in ["model-a", "model-b"]:
+                records: list[LatencyRecord] = []
+                for i in range(200):
+                    base_latency = {"openai": 300.0, "anthropic": 400.0}.get(provider, 300.0)
+                    latency = base_latency + (i % 5) * 10.0
+                    ts = datetime(2026, 8, 1, tzinfo=timezone.utc) + timedelta(minutes=30 * i)
+                    records.append(
+                        LatencyRecord(
+                            provider=provider,
+                            model=model_name,
+                            latency_ms=latency,
+                            timestamp=ts.strftime("%Y-%m-%dT%H:%M:%SZ"),
+                        )
+                    )
+                data[provider][model_name] = records
+        return data
+
     def test_create_engine(self):
         """创建预测引擎."""
         engine = PredictionEngine(horizon=3, lookback=24, min_data_points=50)
         assert engine.min_data_points == 50
 
     def test_predict_for_model(self, sample_records):
-        """对单个模型执行预测."""
-        engine = PredictionEngine(horizon=3, lookback=24, min_data_points=50)
+        """对单个模型执行预测（短期路径）."""
+        engine = PredictionEngine(
+            horizon=3, lookback=24, min_data_points=50,
+            enable_long_term=False,
+        )
         result = engine.predict_for_model("openai", "gpt-4o", sample_records)
 
         assert result is not None
@@ -71,7 +97,7 @@ class TestPredictionEngine:
 
     def test_insufficient_data_returns_none(self):
         """数据不足返回 None."""
-        engine = PredictionEngine(min_data_points=1000)
+        engine = PredictionEngine(min_data_points=1000, enable_long_term=False)
         few_records = [
             LatencyRecord(provider="o", model="m", latency_ms=100.0)
             for _ in range(5)
@@ -81,9 +107,56 @@ class TestPredictionEngine:
 
     def test_predict_providers(self, sample_records):
         """批量 Provider 预测."""
-        engine = PredictionEngine(horizon=3, lookback=24, min_data_points=50)
+        engine = PredictionEngine(
+            horizon=3, lookback=24, min_data_points=50,
+            enable_long_term=False,
+        )
         results = engine.predict_all(
             {"openai": {"gpt-4o": sample_records}}
         )
         assert "openai" in results
         assert "gpt-4o" in results["openai"]
+
+    def test_update_from_observation_feeds_rl(self, sample_records):
+        """feed 实测延迟后 RL 修正方向验证."""
+        engine = PredictionEngine(
+            horizon=2, lookback=24, min_data_points=50,
+            enable_long_term=False,
+        )
+
+        # 第一次预测（无 RL 修正，因为无历史残差）
+        result_before = engine.predict_for_model("openai", "gpt-4o", sample_records)
+        assert result_before is not None
+
+        # feed 极高实测延迟：实测 2000ms，预测 p50 ≈ base
+        predicted_p50 = result_before.p50
+        for _ in range(10):
+            engine.update_from_observation(
+                "openai", "gpt-4o",
+                actual_latency=2000.0,
+                predicted_latency=predicted_p50,
+            )
+
+        # 再次预测，RL 应该向上修正
+        result_after = engine.predict_for_model("openai", "gpt-4o", sample_records)
+        assert result_after is not None
+        # 因为有正偏差残差，修正后 p50 应该 >= 修正前
+        assert result_after.p50 >= result_before.p50
+
+    def test_predict_all_multi_provider(self, multi_provider_data):
+        """多 provider 都能返回结果."""
+        engine = PredictionEngine(
+            horizon=2, lookback=24, min_data_points=50,
+            enable_long_term=False,
+        )
+        results = engine.predict_all(multi_provider_data)
+
+        for provider in ["openai", "anthropic"]:
+            assert provider in results
+            for model_name in ["model-a", "model-b"]:
+                assert model_name in results[provider]
+                pred = results[provider][model_name]
+                assert pred is not None, f"{provider}/{model_name} 应返回预测结果"
+                assert pred.p50 > 0
+                assert 0.0 <= pred.predictability <= 1.0
+                assert set(pred.quantiles.keys()) == {"p10", "p25", "p50", "p75", "p90"}

@@ -100,6 +100,54 @@ class LatencyPredictor:
         self._model.fit(df=df, val_size=val_size)
         self._trained = True
 
+    def train_multi(self, df: pd.DataFrame) -> None:
+        """训练 TFT 模型以处理多个 provider/model 的延迟序列.
+
+        与 train() 的区别:
+        - df 可包含多个 unique_id 值（如 "openai/gpt-4o", "anthropic/claude-3"）
+        - unique_id 仅作为序列分隔符传给 NeuralForecast，不作为特征
+        - 使用更大 hidden_size 和更长训练步数以捕获跨序列的通用潮汐模式
+
+        Args:
+            df: 包含 'unique_id', 'ds', 'y' 及特征列的多序列数据集
+        """
+        from neuralforecast import NeuralForecast
+        from neuralforecast.losses.pytorch import MQLoss
+        from neuralforecast.models import TFT
+
+        warnings.filterwarnings("ignore")
+
+        n_rows = len(df)
+        if n_rows < self.lookback + self.horizon:
+            effective_horizon = max(1, (n_rows - self.lookback) // 2)
+        else:
+            effective_horizon = self.horizon
+
+        if effective_horizon < 1:
+            effective_horizon = 1
+
+        loss = MQLoss(quantiles=[0.1, 0.25, 0.5, 0.75, 0.9])
+
+        model = TFT(
+            h=effective_horizon,
+            input_size=self.lookback,
+            hidden_size=64,          # 更大的隐藏层以捕获跨序列模式
+            n_head=4,
+            dropout=0.1,
+            loss=loss,
+            learning_rate=1e-3,
+            max_steps=200,           # 更长训练以学习通用潮汐模式
+            val_check_steps=10,
+            early_stop_patience_steps=5,
+            scaler_type="standard",
+        )
+
+        val_size = max(1, int(n_rows * 0.1))
+
+        self._model = NeuralForecast(models=[model], freq="30min")
+        self._model.fit(df=df, val_size=val_size)
+        self._trained = True
+
     def predict(self, df: pd.DataFrame) -> dict[str, float]:
         """预测下一个 horizon 步的延迟分位数.
 
