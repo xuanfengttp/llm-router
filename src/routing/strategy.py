@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Protocol
 
 from src.prediction.engine import LatencyPrediction
+from src.routing.learned_strategy import LearnedStrategy
 from src.routing.task_profile import TaskProfile
 from src.scoring.profile import ModelProfile
 
@@ -225,4 +226,5 @@ BUILTIN_STRATEGIES: dict[str, RoutingStrategy] = {
     "quality_first": QualityFirstStrategy(),
     "latency_aware": LatencyAwareStrategy(),
     "task_specific": TaskSpecificStrategy(),
+    "learned": LearnedStrategy(),
 }
