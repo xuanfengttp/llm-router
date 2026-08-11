@@ -42,12 +42,19 @@ if [[ "${1:-}" == "--python" ]]; then
     echo "[2/3] Packaging Python backend with PyInstaller..."
     cd "$ROOT"
     # 使用 backend/src/server.py 作为入口
+    # Windows 下 --add-data 分隔符用 ";" 而非 ":"
+    ADS="--add-data"
+    if [[ "$(uname -s 2>/dev/null || echo Windows)" == *"Windows"* || "${OS:-}" == "Windows_NT" ]]; then
+        SEP=";"
+    else
+        SEP=":"
+    fi
     python -m PyInstaller \
         --name "llm-router-backend" \
-        --onedir \
+        --onefile \
         --console \
-        --add-data "backend:backend" \
-        --add-data "src:src" \
+        --add-data "backend${SEP}backend" \
+        --add-data "src${SEP}src" \
         --hidden-import "uvicorn.logging" \
         --hidden-import "uvicorn.loops.auto" \
         --hidden-import "fastapi" \
@@ -64,8 +71,14 @@ if [[ "${1:-}" == "--python" ]]; then
         --exclude-module "pandas" \
         backend/src/server.py
 
-    cp -r dist/llm-router-backend "$RELEASE_DIR/backend/"
-    echo "  backend packaged → release/llm-router/backend/"
+    # Copy to Tauri externalBin directory (Tauri resolves target-triple suffix automatically)
+    mkdir -p "$ROOT/src-tauri/binaries"
+    if [[ "$(uname -s 2>/dev/null || echo Windows)" == *"Windows"* || "${OS:-}" == "Windows_NT" ]]; then
+        cp "$ROOT/dist/llm-router-backend.exe" "$ROOT/src-tauri/binaries/llm-router-backend-x86_64-pc-windows-msvc.exe"
+    else
+        cp "$ROOT/dist/llm-router-backend" "$ROOT/src-tauri/binaries/llm-router-backend-$(rustc -vV 2>/dev/null | grep host | cut -d' ' -f2 || echo 'x86_64-unknown-linux-gnu')"
+    fi
+    echo "  backend exe → src-tauri/binaries/ (for Tauri bundling)"
 else
     echo ""
     echo "[2/3] Skipping Python packaging (use --python to package backend)."

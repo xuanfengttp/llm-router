@@ -104,16 +104,27 @@ fn start_backend() -> Option<Child> {
         .open(&log_file_path)
         .ok();
 
-    let mut cmd = Command::new("python");
-    cmd.args([
-        "-m",
-        "uvicorn",
-        "backend.src.server:app",
-        "--host",
-        "0.0.0.0",
-        "--port",
-        "19876",
-    ]);
+    // 检测 bundled backend exe（生产模式），优先使用；否则回退到 python（开发模式）
+    let backend_exe = exe_dir.as_ref().map(|d| d.join("llm-router-backend.exe"));
+    let use_bundled = backend_exe.as_ref().map(|p| p.exists()).unwrap_or(false);
+
+    let mut cmd = if use_bundled {
+        let exe_path = backend_exe.as_ref().unwrap();
+        eprintln!("[Tauri] Using bundled backend: {:?}", exe_path);
+        Command::new(exe_path)
+    } else {
+        let mut c = Command::new("python");
+        c.args([
+            "-m",
+            "uvicorn",
+            "backend.src.server:app",
+            "--host",
+            "0.0.0.0",
+            "--port",
+            "19876",
+        ]);
+        c
+    };
     // Windows: hide console window
     #[cfg(target_os = "windows")]
     {
@@ -161,13 +172,21 @@ fn start_backend() -> Option<Child> {
             Some(child)
         }
         Err(err) => {
-            eprintln!(
-                "[Tauri] FATAL: Failed to start Python backend: {}\n\
-                 Make sure Python is installed and 'pip install uvicorn fastapi' has been run.\n\
-                 Working directory: {:?}",
-                err,
-                std::env::current_dir().unwrap_or_default(),
-            );
+            if use_bundled {
+                eprintln!(
+                    "[Tauri] FATAL: Failed to start bundled backend: {}\n\
+                     Backend exe: {:?}",
+                    err, backend_exe,
+                );
+            } else {
+                eprintln!(
+                    "[Tauri] FATAL: Failed to start Python backend: {}\n\
+                     Make sure Python is installed and 'pip install uvicorn fastapi' has been run.\n\
+                     Working directory: {:?}",
+                    err,
+                    std::env::current_dir().unwrap_or_default(),
+                );
+            }
             None
         }
     }

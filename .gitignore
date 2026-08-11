@@ -183,6 +183,7 @@ frontend/.oxlintrc.json
 # Tauri dev artifacts
 src-tauri/icons/
 src-tauri/gen/
+src-tauri/binaries/
 
 # IDE / Editor
 .idea/

@@ -11,16 +11,27 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 # 将项目根目录加入 sys.path，使 src.config.* / src.network.* 等导入解析正常工作
-# Path(__file__) = backend/src/server.py → .parent.parent.parent = 项目根目录
-_project_root = str(Path(__file__).parent.parent.parent.resolve())
-if _project_root not in sys.path:
-    sys.path.insert(0, _project_root)
+# PyInstaller (frozen) vs 开发模式路径处理
+if getattr(sys, 'frozen', False):
+    # PyInstaller --onefile: sys._MEIPASS 是临时解压目录，包含了 --add-data 内容
+    _bundle_dir = str(Path(sys._MEIPASS))
+    if _bundle_dir not in sys.path:
+        sys.path.insert(0, _bundle_dir)
+    # src.api.* 在 _MEIPASS/backend/src/api/ 下，需额外加 backend/ 到 sys.path
+    _backend_dir = str(Path(sys._MEIPASS) / "backend")
+    if _backend_dir not in sys.path:
+        sys.path.insert(0, _backend_dir)
+else:
+    # Path(__file__) = backend/src/server.py → .parent.parent.parent = 项目根目录
+    _project_root = str(Path(__file__).parent.parent.parent.resolve())
+    if _project_root not in sys.path:
+        sys.path.insert(0, _project_root)
 
-# 将 backend 根目录加入 sys.path，使 src.api.* 导入解析正常工 作
-# Path(__file__) = backend/src/server.py → .parent.parent = backend/
-_backend_root = str(Path(__file__).parent.parent.resolve())
-if _backend_root not in sys.path:
-    sys.path.insert(0, _backend_root)
+    # 将 backend 根目录加入 sys.path，使 src.api.* 导入解析正常工作
+    # Path(__file__) = backend/src/server.py → .parent.parent = backend/
+    _backend_root = str(Path(__file__).parent.parent.resolve())
+    if _backend_root not in sys.path:
+        sys.path.insert(0, _backend_root)
 
 
 from src.api.config_api import router as config_router
@@ -130,3 +141,8 @@ app.include_router(settings_router, prefix="/api")
 @app.get("/health")
 async def health():
     return {"status": "ok"}
+
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=19876)
